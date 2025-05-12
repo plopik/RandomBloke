@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bot Battle</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="simulation.js"></script>
+</head>
+
+<body>
+    <div style="display: flex; flex-direction: row; height: 100vh;">
+        <!-- Left: Controls -->
+        <div style="flex: 0 0 320px; padding: 32px;">
+            <h2>Simulation Parameters</h2>
+            <form id="simForm" autocomplete="off">
+                <label>
+                    N (bots):<br>
+                    <input type="number" id="inputN" min="1" max="100" value="10" style="width: 80px;">
+                </label><br><br>
+                <label>
+                    Emin:<br>
+                    <input type="number" id="inputEmin" min="0" max="1" step="0.01" value="0" style="width: 80px;">
+                </label><br><br>
+                <label>
+                    Emax:<br>
+                    <input type="number" id="inputEmax" min="0" max="1" step="0.01" value="0.2" style="width: 80px;">
+                </label><br><br>
+                <label>
+                    STEPS_PER_TICK:<br>
+                    <input type="number" id="inputSteps" min="1" max="100000" value="2000" style="width: 80px;">
+                </label><br><br>
+                <button type="submit">Apply</button>
+            </form>
+            <div id="totalPointsPlayed" style="margin-top:32px; font-size:1.2em;">
+                Total Points Played: 0
+            </div>
+        </div>
+        <!-- Right: Chart -->
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <canvas id="ratioChart" width="700" height="400"></canvas>
+        </div>
+    </div>
+   
+    <script>
+        let chart, simInterval;
+
+        function setupChart(N) {
+            const ctx = document.getElementById('ratioChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({ length: N }, (_, i) => `Bot ${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'Set Win Ratio (%)',
+                            type: 'bar',
+                            data: [],
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            order: 1
+                        },
+                        {
+                            label: 'CI Lower Bound',
+                            type: 'scatter',
+                            data: [],
+                            backgroundColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 4,
+                            order: 2
+                        },
+                        {
+                            label: 'CI Upper Bound',
+                            type: 'scatter',
+                            data: [],
+                            backgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointRadius: 4,
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Win Ratio (%)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
+            });
+        }
+
+        function updateUI(score) {
+            document.getElementById('totalPointsPlayed').textContent = `Total Points Played: ${score.totalPoints[1] + score.totalPoints0[1]}`;
+            const labels = score.setWinRatios.map(r => `Bot ${r.bot}`);
+            const ratios = score.setWinRatios.map(r => (r.ratio * 100));
+            const ciLows = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciLow * 100 }));
+            const ciHighs = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciHigh * 100 }));
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = ratios;
+            chart.data.datasets[1].data = ciLows;
+            chart.data.datasets[2].data = ciHighs;
+            chart.update();
+        }
+
+        function startSimulation(N, Emin, Emax, STEPS_PER_TICK) {
+            if (simInterval) clearInterval(simInterval);
+            window.simulation.init(N, Emin, Emax, STEPS_PER_TICK);
+            setupChart(N);
+            simInterval = setInterval(() => {
+                window.simulation.simulateStep();
+                updateUI(window.simulation.score);
+            }, 1000);
+        }
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', function () {
+            const N = parseInt(document.getElementById('inputN').value, 10);
+            const Emin = parseFloat(document.getElementById('inputEmin').value);
+            const Emax = parseFloat(document.getElementById('inputEmax').value);
+            const STEPS_PER_TICK = parseInt(document.getElementById('inputSteps').value, 10);
+
+            startSimulation(N, Emin, Emax, STEPS_PER_TICK);
+
+            document.getElementById('simForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const N = parseInt(document.getElementById('inputN').value, 10);
+                const Emin = parseFloat(document.getElementById('inputEmin').value);
+                const Emax = parseFloat(document.getElementById('inputEmax').value);
+                const STEPS_PER_TICK = parseInt(document.getElementById('inputSteps').value, 10);
+                startSimulation(N, Emin, Emax, STEPS_PER_TICK);
+            });
+        });
+    </script>
+
+</body>
+</html>
