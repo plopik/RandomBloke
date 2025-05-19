@@ -1,99 +1,212 @@
-// simulation.js
-
-let N = 10;
-let Emin = 0;
-let Emax = 0.3;
-let STEPS_PER_TICK = 2000;
-
+let N = 100;
+let chartStepPerTick = 1000;
 let score;
+let optimSetSize = 3;
+let chartingBotStrategy = null;
+let chart, chartInterval;
+let chartPaused = false;
+let simInterval;
 
-function init(n, emin, emax, stepsPerTick) {
-    N = n;
-    Emin = emin;
-    Emax = emax;
-    STEPS_PER_TICK = stepsPerTick;
-    score = {
-        bots: Array(N + 1).fill(0),
-        bot0: Array(N + 1).fill(0),
-        sets: Array(N + 1).fill(0),
-        sets0: Array(N + 1).fill(0),
-        energy: Array(N + 1).fill(2),
-        energy0: Array(N + 1).fill(2),
-        lastUsed: Array(N + 1).fill(0),
-        lastUsed0: Array(N + 1).fill(0),
-        totalPoints: Array(N + 1).fill(0),
-        totalPoints0: Array(N + 1).fill(0),
-        setWinRatios: [],
-        totalPointsPlayed: 0
-    };
-    window.simulation.score = score
-}
-
-function botStrategy(botIdx, currentEnergy, bot0Score, botScore) {
-    if (botIdx === 0) return 1;
-    if (botScore >= 2 && bot0Score >= 2) {
-        if (currentEnergy >= 10) return 1 + currentEnergy / 100;
-        return 1;
+function chartRender() {
+    const applyStrategyBtn = document.getElementById('chartApply');
+    const pauseBtn = document.getElementById('chartPause');
+    applyStrategyBtn.onclick = chartReset;
+    pauseBtn.onclick = chartPause;
+    if (!score) {
+        chartReset();
     }
-    const E = Emin + (Emax - Emin) * (botIdx - 1) / (N - 1);
-    return 1 - E;
+}
+function chartPause() {
+    chartPaused = !chartPaused;
+    const pauseBtn = document.getElementById('chartPause');
+    if (chartPaused) {
+        pauseBtn.innerHTML = 'Resume';
+    } else {
+        pauseBtn.innerHTML = 'Pause';
+    }
 }
 
-function resetSet(i) {
-    score.bots[i] = 0;
-    score.bot0[i] = 0;
+
+function chartReset() {
+    score = {
+        botPoints: Array(N).fill(0),
+        dummyPoints: Array(N).fill(0),
+        botSets: Array(N + 1).fill(0),
+        dummySets: Array(N + 1).fill(0),
+        energy: Array(N).fill(1),
+        setWinRatios: [],
+        totalPointsPlayed: 0,
+        bestSetWinRatio: 0,
+        m: null,
+    };
+    setupChart();
+    
+    const codeConst = document.getElementById('strategyConst').value;
+    score.m = eval('(function f(){' + codeConst + '})')();
+    
+    const code = document.getElementById('strategyFunc').value;
+    chartBotStrategy = eval('(function botStrategy(botID, energy, botPoint, dummyPoint, m){' + code + '})');
+
+    console.log("m", score.m);
+    console.log("chartBotStrategy", chartBotStrategy);
+
+    tickCount = 0;
+    lastTickTime = Date.now();
+    startTime = Date.now();
+
+    console.log('Simulation start');
+    if (chartInterval) clearInterval(simInterval);
+    chartInterval = setInterval(() => {
+        if (chartPaused) return; // Skip simulation step if paused
+        try {
+            simulateStep();
+            const now = Date.now();
+            const animation = now - startTime < 60000;
+            updateUI(animation);
+
+            // Count ticks
+            tickCount++;
+
+            if (now - lastTickTime >= 1000) {
+                document.getElementById('ticksPerSecond').textContent =
+                    `fps:${tickCount}`;
+                tickCount = 0;
+                lastTickTime = now;
+            }
+        }
+        catch (e) {
+            clearInterval(chartInterval);
+            alert('Simulation error: ' + e.message);
+            throw e;
+            return;
+        }
+    }, 200);
+}
+
+function setupChart() {
+    const ctx = document.getElementById('ratioChart').getContext('2d');
+    if (chart) return;
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Array.from({ length: N }, (_, i) => `Bot ${i}`),
+            datasets: [
+                {
+                    label: 'Set Win Ratio (%)',
+                    type: 'bar',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    order: 1
+                },
+                {
+                    label: 'CI Lower Bound',
+                    type: 'scatter',
+                    data: [],
+                    backgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'CI Upper Bound',
+                    type: 'scatter',
+                    data: [],
+                    backgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Theoretical value',
+                    type: 'scatter',
+                    data: [],
+                    backgroundColor: 'rgba(192, 192, 75, 1)',
+                    pointRadius: 4,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            animation: true,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'Win Ratio (%)' }
+                }
+            },
+            plugins: {
+                legend: { display: true }
+            }
+        }
+    });
+    //const tomap = simulation.computeTheoreticalWinRatios(simulation.m);
+    //const theoretical = tomap.map((r) => (r * 100));
+    //chart.data.datasets[3].data = theoretical;
+    chart.update();
+}
+
+function updateUI(animation) {
+    //document.getElementById('totalPointsPlayed').textContent = `Total Rounds Played: ${score.totalPointsPlayed}`;
+    const labels = score.setWinRatios.map(r => `Bot ${r.bot}`);
+    const ratios = score.setWinRatios.map(r => (r.ratio * 100));
+    const ciLows = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciLow * 100 }));
+    const ciHighs = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciHigh * 100 }));
+
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = ratios;
+    chart.data.datasets[1].data = ciLows;
+    chart.data.datasets[2].data = ciHighs;
+    chart.options.animation = animation;
+    chart.update();
+    // Update best set win ratio display
+    document.getElementById('bestSetWinRatio').textContent =
+        `Best Set Win Ratio: ${(score.bestSetWinRatio * 100).toFixed(1)}%`;
 }
 
 function simulateStep() {
-    for (let step = 0; step < STEPS_PER_TICK; step++) {
-        for (let i = 1; i <= N; i++) {
-            score.energy[i] = Math.min(score.energy[i] + 1, 1000);
-            score.energy0[i] = Math.min(score.energy0[i] + 1, 1000);
-
-            const usedBot = botStrategy(i, score.energy[i], score.bot0[i], score.bots[i]);
-            const used0 = botStrategy(0, score.energy0[i], score.bot0[i], score.bots[i]);
+    for (let step = 0; step < chartStepPerTick; step++) {
+        for (let i = 0; i < N; i++) {
+            
+            score.energy[i] = Math.min(score.energy[i] + 1, 10000);
+            const usedBot = Math.min(score.energy[i], chartBotStrategy(i, score.energy[i], score.botPoints[i], score.dummyPoints[i], score.m));
+            const used0 = 1;
 
             score.energy[i] -= usedBot;
-            score.energy0[i] -= used0;
-
-            score.lastUsed[i] = usedBot;
-            score.lastUsed0[i] = used0;
-
+            
             const total = usedBot + used0;
             if (total > 0) {
                 const rand = Math.random() * total;
                 if (rand < usedBot) {
-                    score.bots[i]++;
-                    score.totalPoints[i]++;
+                    score.botPoints[i]++;
                 } else {
-                    score.bot0[i]++;
-                    score.totalPoints0[i]++;
+                    score.dummyPoints[i]++;
                 }
                 score.totalPointsPlayed++;
             }
 
-            const bBot = score.bots[i];
-            const b0 = score.bot0[i];
+            const bBot = score.botPoints[i];
+            const b0 = score.dummyPoints[i];
             if (bBot >= 3 || b0 >= 3) {
                 if (bBot > b0) {
-                    score.sets[i]++;
+                    score.botSets[i]++;
                 } else {
-                    score.sets0[i]++;
+                    score.dummySets[i]++;
                 }
-                resetSet(i);
+                score.botPoints[i] = 0;
+                score.dummyPoints[i] = 0;
             }
         }
     }
+    
 
     // Calculate win ratios and 90% CI for each bot1..N
     score.setWinRatios = [];
-    for (let i = 1; i <= N; i++) {
-        const setsBot = score.sets[i];
-        const sets0 = score.sets0[i];
-        const n = setsBot + sets0;
+    for (let i = 0; i < N; i++) {
+        const bset = score.botSets[i];
+        const dset = score.dummySets[i];
+        const n = bset + dset;
         let ratio = 0, ciLow = 0, ciHigh = 0;
         if (n > 0) {
-            ratio = setsBot / n;
+            ratio = bset / n;
             const z = 1.645;
             const se = Math.sqrt(ratio * (1 - ratio) / n);
             ciLow = Math.max(0, ratio - z * se);
@@ -106,11 +219,14 @@ function simulateStep() {
             ciHigh
         });
     }
+    // After the for loop that fills setWinRatios:
+    let best = 0;
+    for (let i = 0; i < score.setWinRatios.length; i++) {
+        if (score.setWinRatios[i].ciLow > best) {
+            best = score.setWinRatios[i].ciLow;
+        }
+    }
+    if (score.totalPointsPlayed > 1000) {
+        score.bestSetWinRatio = best;
+    }
 }
-
-// Expose score, simulateStep, and init globally
-window.simulation = {
-    score,
-    simulateStep,
-    init
-};

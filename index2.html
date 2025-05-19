@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bot Battle</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/optimization-js@latest/dist/optimization.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
+    <script src="simulation.js"></script>
+    <script src="manual.js"></script>
+</head>
+
+<body style="margin: 0;">
+    <div id="ticksPerSecond" style="position:fixed;top:0;left:0;padding:8px 16px;font-size:1em;color:#666;z-index:3000;">
+        fps: 0
+    </div>
+    <div id="totalPointsPlayed" style="position:fixed;top:15px;left:0;padding:8px 16px;font-size:1em;color:#666;z-index:3000;">
+        Total Rounds Played: 0
+    </div>
+    <div style="display: flex; height: 100vh;">
+        <!-- Left: Controls -->
+        <div style="flex: 0 0 100px; padding: 32px; border: 2px solid red">
+            <h2>Simulation Parameters</h2>
+            <p><button id="openRulesModal" type="button">Game Rules</button></p>
+
+            <form id="simForm" autocomplete="off">
+                <label>
+                    Number of bots :
+                    <input type="number" id="inputN" value="2" style="width: 60px;">
+                </label><br><br>
+                <label>
+                    Round per second:
+                    <input type="number" id="inputSteps" value="100" style="width: 60px;">
+                </label><br><br>
+            </form>
+
+            <label for="strategyConst">Pre-computed object "m" to be used by botStrategy</label>
+            <textarea id="strategyConst" rows="15" cols="40">
+let m = Array(101);
+m[1] =[
+[
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ]
+];
+m[2] =
+[
+ [
+  0.8505618498284232,
+  0.8464607122573812,
+  0.41608633434896475
+ ],
+ [
+  0.8540166099188932,
+  1.1181744979097081,
+  1.0026230039838537
+ ],
+ [
+  0.5935231552768643,
+  1.2407385704343965,
+  2.0051753055901425
+ ]
+];
+//paris
+matrix = 
+[[0.84983574, 0.85341334, 0.60529108],
+ [0.84661524, 1.11740722, 1.23907752],
+ [0.40841263, 1.00210295, 2.00250809]]
+m[3] = matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+return m;
+</textarea>
+            <br>
+            <label for="strategyBox">function botStrategy(i, energy, dummyScore, botScore)</label>
+            <textarea id="strategyBox" rows="6" cols="40">
+return m[i][dummyScore][botScore]</textarea>
+            <br>
+            <button id="applyStrategy">Apply</button>
+            <button id="pauseBtn">Pause</button>
+
+        </div>
+        <!-- Right: Chart -->
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; border: 2px solid red">
+            <div style="margin-bottom: 16px; text-align: center;">
+                <button id="showInteractiveBtn">Show Interactive Simulation</button>
+                <button id="showOverviewBtn">Show Match Overview</button>
+                <button id="showChartBtn">Show Chart</button>
+                <button id="showOptimizerBtn">Show Optimizer</button>
+            </div>
+            <div id="interactivePanel" style="display:none; width:700px; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                <h2>Interactive Game Simulation</h2>
+                <div id="interactiveSimArea" style="min-height:220px; margin-bottom:16px;"></div>
+                <button id="simStepBtn">Step</button>
+                <button id="simResetBtn">Reset</button>
+                <div id="simState" style="margin-top:16px; font-family:monospace;"></div>
+            </div>
+            <div id="chartPanel" style="display:none; width:700px; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                <div id="bestSetWinRatio" style="font-size:1.5em; font-weight:bold; color:#1a73e8; margin-bottom:16px;">
+                    Best Set Win Ratio: 0%
+                </div>
+                <canvas id="ratioChart" width="700" height="400"></canvas>
+            </div>
+            <div id="overviewPanel" style="display:none; width:700px; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                <h2>Detailed Match Overview<br><small>(<span id="overviewBotLabel">Bot 1</span> vs Dummy)</small></h2>
+                <label for="overviewBotSelect">Choose bot:</label>
+                <select id="overviewBotSelect"></select>
+                <div id="overviewContent"></div>
+            </div>
+            <div id="optimizerPanel" style="display:none; width:800px; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                <h2>Optimizer Results</h2>
+                <canvas id="optimizerChart" width="650" height="200"></canvas>
+                <div style="display: flex; flex-direction: row; gap: 24px; align-items: flex-start;">
+                    <textarea id="optimizerStart" rows="20" cols="20">
+[
+ [
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ]
+]</textarea>
+                    <pre id="optimizerSolution"
+                         style="background:#f8f8f8; border-radius:6px; font-size:0.95em; max-height:300px; max-width:350px; overflow:auto; flex-shrink: 0;"></pre>
+                    <div style="width: 300px; height: 300px; margin-top:16px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="optimizerHeatmap"
+                                width="100" height="100"
+                                style="display:block; width:100px; height:100px;"></canvas>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+    <!-- Game Rules Modal -->
+    <div id="rulesModal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4);">
+        <div style="background:#fff; margin:5% auto; padding:32px; border-radius:8px; width:90%; max-width:600px; position:relative;">
+            <button id="closeRulesModal" style="position:absolute; right:16px; top:16px; font-size:1.5em;">&times;</button>
+            <div id="rulesModalContent">
+                <!-- Rules will be loaded here -->
+                <div style="text-align:center; color:#888;">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let chart, simInterval, optimInterval;
+        let currentView = 'overview'; // or 'overview'
+        let isPaused = false;
+
+
+
+        function setupChart(N) {
+            const ctx = document.getElementById('ratioChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({ length: N }, (_, i) => `Bot ${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'Set Win Ratio (%)',
+                            type: 'bar',
+                            data: [],
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            order: 1
+                        },
+                        {
+                            label: 'CI Lower Bound',
+                            type: 'scatter',
+                            data: [],
+                            backgroundColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 4,
+                            order: 2
+                        },
+                        {
+                            label: 'CI Upper Bound',
+                            type: 'scatter',
+                            data: [],
+                            backgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointRadius: 4,
+                            order: 2
+                        },
+                        {
+                            label: 'Theoretical value',
+                            type: 'scatter',
+                            data: [],
+                            backgroundColor: 'rgba(192, 192, 75, 1)',
+                            pointRadius: 4,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    animation: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Win Ratio (%)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
+            });
+            const tomap = simulation.computeTheoreticalWinRatios(simulation.m);
+            const theoretical = tomap.map((r) => (r * 100 ));
+            chart.data.datasets[3].data = theoretical;
+            chart.update();
+        }
+
+        function populateOverviewBotSelect(N) {
+            const select = document.getElementById('overviewBotSelect');
+            select.innerHTML = '';
+            for (let i = 1; i <= N; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `Bot ${i}`;
+                select.appendChild(opt);
+            }
+        }
+
+        function updateUI(score,animation) {
+            document.getElementById('totalPointsPlayed').textContent = `Total Rounds Played: ${score.totalPointsPlayed}`;
+            const labels = score.setWinRatios.map(r => `Bot ${r.bot}`);
+            const ratios = score.setWinRatios.map(r => (r.ratio * 100));
+            const ciLows = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciLow * 100 }));
+            const ciHighs = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciHigh * 100 }));
+
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = ratios;
+            chart.data.datasets[1].data = ciLows;
+            chart.data.datasets[2].data = ciHighs;
+            chart.options.animation = animation;
+            chart.update();
+            // Update best set win ratio display
+            document.getElementById('bestSetWinRatio').textContent =
+                `Best Set Win Ratio: ${(score.bestSetWinRatio * 100).toFixed(1)}%`;
+        }
+
+        function startSimulation() {
+            try {
+                const N = parseInt(document.getElementById('inputN').value, 10);
+                const STEPS_PER_TICK = parseInt(document.getElementById('inputSteps').value, 10)/5;
+
+                const code = document.getElementById('strategyBox').value;
+                const codeConst = document.getElementById('strategyConst').value;
+                // Define botStrategy in the simulation.js context
+                simulation.m = eval('(function f(){' + codeConst + '})')();
+                simulation.botStrategy = eval('(function botStrategy(i, energy, dummyScore, botScore, m){' + code + '})');
+                simulation.optimizerStart = JSON.parse(document.getElementById('optimizerStart').value);
+
+                console.log('N:', N, 'STEPS_PER_TICK:', STEPS_PER_TICK);
+                if (simInterval) clearInterval(simInterval);
+                simulation.init(N, STEPS_PER_TICK);
+                setupChart(N);
+                populateOverviewBotSelect(N);
+
+                tickCount = 0;
+                lastTickTime = Date.now();
+                startTime = Date.now();
+
+                console.log('Simulation start');
+
+                simInterval = setInterval(() => {
+                    if (isPaused) return; // Skip simulation step if paused
+                    try {
+                        i = simulation.simulateStep();
+                        const now = Date.now();
+                        const animation = now - startTime < 60000;
+                        updateUI(simulation.score, animation);
+                        if (overviewPanel.style.display !== 'none') {
+                            renderOverview();
+                        }
+                        // Count ticks
+                        tickCount++;
+
+                        if (now - lastTickTime >= 1000) {
+                            document.getElementById('ticksPerSecond').textContent =
+                                `fps:${tickCount}`;
+                            tickCount = 0;
+                            lastTickTime = now;
+                        }
+                    }
+                    catch (e) {
+                        clearInterval(simInterval);
+                        alert('Simulation error: ' + e.message);
+                        return;
+                    }
+                }, 200);
+            } catch (e) {
+                alert('Error in strategy: ' + e.message);
+            }
+        }
+
+
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', function () {
+            startSimulation();
+        });
+
+        document.getElementById('applyStrategy').onclick = function () {
+            startSimulation();
+        };
+
+        const chartCanvas = document.getElementById('chartPanel');
+        const overviewPanel = document.getElementById('overviewPanel');
+        const overviewContent = document.getElementById('overviewContent');
+        const showChartBtn = document.getElementById('showChartBtn');
+        const showOverviewBtn = document.getElementById('showOverviewBtn');
+
+        let optimizerChart;
+        const optimizerPanel = document.getElementById('optimizerPanel');
+        const optimizerChartCanvas = document.getElementById('optimizerChart');
+        const showOptimizerBtn = document.getElementById('showOptimizerBtn');
+
+        function showChart() {
+            chartCanvas.style.display = '';
+            overviewPanel.style.display = 'none';
+            optimizerPanel.style.display = 'none';
+            interactivePanel.style.display = 'none';
+            currentView = 'chart';
+        }
+        function showOverview() {
+            chartCanvas.style.display = 'none';
+            overviewPanel.style.display = '';
+            optimizerPanel.style.display = 'none';
+            interactivePanel.style.display = 'none';
+            currentView = 'overview';
+            renderOverview();
+        }
+        function showOptimizer() {
+            chartCanvas.style.display = 'none';
+            overviewPanel.style.display = 'none';
+            optimizerPanel.style.display = '';
+            interactivePanel.style.display = 'none';
+            currentView = 'optimizer';
+            renderOptimizerChart();
+        }
+
+        const interactivePanel = document.getElementById('interactivePanel');
+        const showInteractiveBtn = document.getElementById('showInteractiveBtn');
+        const simStepBtn = document.getElementById('simStepBtn');
+        const simResetBtn = document.getElementById('simResetBtn');
+        const simStateDiv = document.getElementById('simState');
+        const interactiveSimArea = document.getElementById('interactiveSimArea');
+
+        let simState;
+
+        function showInteractive() {
+            chartCanvas.style.display = 'none';
+            overviewPanel.style.display = 'none';
+            optimizerPanel.style.display = 'none';
+            interactivePanel.style.display = '';
+            currentView = 'interactive';
+            resetSim();
+        }
+
+        showInteractiveBtn.onclick = showInteractive;
+        simStepBtn.onclick = stepSim;
+        simResetBtn.onclick = resetSim;
+
+        let selectedOverviewBot = 1;
+
+        function renderOverview() {
+            const score = simulation.score;
+            const i = selectedOverviewBot;
+            document.getElementById('overviewBotLabel').textContent = `Bot ${i}`;
+            overviewContent.innerHTML = `
+        <table style="width:100%; border-collapse:collapse;">
+            <tr><th></th><th>Bot ${i}</th><th>Dummy (Bot 0)</th></tr>
+            <tr><td>Current Points</td><td>${score.bots[i]}</td><td>${score.bot0[i]}</td></tr>
+            <tr><td>Sets Won</td><td>${score.sets[i]}</td><td>${score.sets0[i]}</td></tr>
+            <tr><td>Total Points</td><td>${score.totalPoints[i]}</td><td>${score.totalPoints0[i]}</td></tr>
+            <tr><td>Current Energy</td><td>${Math.round(score.energy[i])}</td><td>${score.energy0[i]}</td></tr>
+        </table>
+        <p style="margin-top:1em;">
+            <b>Set Win Ratio:</b> ${score.setWinRatios[i - 1] ? (score.setWinRatios[i - 1].ratio * 100).toFixed(2) + '%' : 'N/A'}
+            <br>
+            <b>90% CI:</b> ${score.setWinRatios[i - 1]
+                    ? (score.setWinRatios[i - 1].ciLow * 100).toFixed(1) + '% - ' + (score.setWinRatios[i - 1].ciHigh * 100).toFixed(1) + '%'
+                    : 'N/A'
+                }
+        </p>
+    `;
+        }
+
+        let optimizerHeatmap;
+        const optimizerHeatmapCanvas = document.getElementById('optimizerHeatmap');
+
+        function renderOptimizerChart() {
+            if (optimizerChart) optimizerChart.destroy();
+            const ctx = optimizerChartCanvas.getContext('2d');
+            optimizerChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Optimized Value',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    animation: false,
+                    scales: {
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+
+            if (optimizerHeatmap) optimizerHeatmap.destroy();
+            optimizerHeatmap = new Chart(optimizerHeatmapCanvas.getContext('2d'), {
+                type: 'matrix',
+                data: {
+                    datasets: [{
+                        label: 'Solution Heatmap',
+                        data: [{x:0,y:0,v:0}],
+                        backgroundColor: ctx => {
+                            // Simple blue-to-red scale
+                            const value = ctx.raw.v;
+                            const min = 0.4, max = 2;
+                            const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+                            const r = Math.round(255 * 2 * t);
+                            const g = Math.round(255 * (4 * (t - 0.5)));
+                            const b = Math.round(255 * (4*(t-0.75)));
+                            return `rgb(${r},${g},${b})`;
+                        },
+                        width: ({ chart }) => (chart.chartArea || {}).width / 3 - 1,
+                        height: ({ chart }) => (chart.chartArea || {}).height / 3 - 1,
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    animation: false,
+                    plugins: {
+                        legend: false,
+                        tooltip: {
+                            callbacks: {
+                                title() {
+                                    return '';
+                                },
+                                label(context) {
+                                    const v = context.dataset.data[context.dataIndex];
+                                    return [' '+ v.v];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            min: -0.5,
+                            max: 2.5,
+                            offset: false,
+                            ticks: { stepSize: 1 },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            display: false,
+                            min: -0.5,
+                            max: 2.5,
+                            offset: false,
+                            ticks: { stepSize: 1 },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            optimInterval = setInterval(() => {
+                try {
+                    if (isPaused) return;
+                    const solution = simulation.optimizeBotStrategy();
+                    const data = simulation.bestxs;
+                    optimizerChart.data.labels = data.map((_, i) => `Gen ${i + 1}`);
+                    optimizerChart.data.datasets[0].data = data.map((r) => (r * 100));
+                    optimizerChart.update();
+                    document.getElementById('optimizerSolution').textContent =
+                        JSON.stringify(solution,null,1);
+
+                    const heatmapData = [];
+                    for (let y = 0; y < solution.length; y++) {
+                        for (let x = 0; x < solution[y].length; x++) {
+                                heatmapData.push({
+                                    x: x,
+                                    y: y,
+                                    v: solution[y][x]
+                                });
+                            }
+                        }
+
+                    optimizerHeatmap.data.datasets[0].data = heatmapData;
+                    optimizerHeatmap.update();
+                }
+                catch (e) {
+                    clearInterval(simInterval);
+                    alert('Optimization error: ' + e.message);
+                    return;
+                }
+            }, 1000);
+        }
+
+
+
+        showOptimizerBtn.onclick = showOptimizer;
+        showChartBtn.onclick = showChart;
+        showOverviewBtn.onclick = showOverview;
+        // Modal logic for game rules
+        const rulesModal = document.getElementById('rulesModal');
+        const openRulesModal = document.getElementById('openRulesModal');
+        const closeRulesModal = document.getElementById('closeRulesModal');
+        const rulesModalContent = document.getElementById('rulesModalContent');
+
+        openRulesModal.onclick = function () {
+            rulesModal.style.display = 'block';
+            // Only fetch if not already loaded
+            if (!rulesModalContent.dataset.loaded) {
+                fetch('rules.html')
+                    .then(res => res.text())
+                    .then(html => {
+                        // Extract just the <body> content if you want, or show all
+                        const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                        rulesModalContent.innerHTML = bodyMatch ? bodyMatch[1] : html;
+                        rulesModalContent.dataset.loaded = "1";
+                    })
+                    .catch(() => {
+                        rulesModalContent.innerHTML = "<div style='color:red;'>Failed to load rules.</div>";
+                    });
+            }
+        };
+        closeRulesModal.onclick = function () {
+            rulesModal.style.display = 'none';
+        };
+        // Optional: close modal when clicking outside the modal content
+        rulesModal.onclick = function (e) {
+            if (e.target === rulesModal) rulesModal.style.display = 'none';
+        };
+
+        const pauseBtn = document.getElementById('pauseBtn');
+        pauseBtn.onclick = function () {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+        };
+
+        document.getElementById('overviewBotSelect').onchange = function (e) {
+            selectedOverviewBot = parseInt(e.target.value, 10);
+            renderOverview();
+        };
+
+
+    </script>
+
+
+</body>
+</html>

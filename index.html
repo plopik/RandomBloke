@@ -2,138 +2,265 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bot Battle</title>
+    <title>Mini Random Tennis</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/optimization-js@latest/dist/optimization.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
     <script src="simulation.js"></script>
-</head>
+    <script src="manual.js"></script>
+    <script src="automation.js"></script>
+    <script src="optimizer.js"></script>
 
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 200px;
+            background: #f4f4f4;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 24px 12px;
+        }
+
+            .sidebar button {
+                margin: 8px 16px;
+                padding: 12px;
+                font-size: 1em;
+                border: none;
+                background: #e0e0e0;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+                .sidebar button.active {
+                    background: #1a73e8;
+                    color: #fff;
+                }
+
+        .main {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px;
+            background: #fafbfc;
+        }
+
+        .panel {
+            display: none;
+            width: 100%;
+        }
+
+            .panel.active {
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-evenly;
+                align-items: stretch;
+                border: dashed 1px #ccc;
+            }
+    </style>
+</head>
 <body>
-    <div style="display: flex; flex-direction: row; height: 100vh;">
-        <!-- Left: Controls -->
-        <div style="flex: 0 0 320px; padding: 32px;">
-            <h2>Simulation Parameters</h2>
-            <form id="simForm" autocomplete="off">
-                <label>
-                    N (bots):<br>
-                    <input type="number" id="inputN" min="1" max="100" value="10" style="width: 80px;">
-                </label><br><br>
-                <label>
-                    Emin:<br>
-                    <input type="number" id="inputEmin" min="0" max="1" step="0.01" value="0" style="width: 80px;">
-                </label><br><br>
-                <label>
-                    Emax:<br>
-                    <input type="number" id="inputEmax" min="0" max="1" step="0.01" value="0.2" style="width: 80px;">
-                </label><br><br>
-                <label>
-                    STEPS_PER_TICK:<br>
-                    <input type="number" id="inputSteps" min="1" max="100000" value="2000" style="width: 80px;">
-                </label><br><br>
-                <button type="submit">Apply</button>
-            </form>
-            <div id="totalPointsPlayed" style="margin-top:32px; font-size:1.2em;">
-                Total Points Played: 0
+    <div class="container">
+        <div class="sidebar">
+            <h2 style="border:1px solid black; padding: 5px;">Mini Random Tennis</h2>
+            <button id="btn1">Tutorial</button>
+            <button id="btn2">Automating</button>
+            <button id="btn3">Charting</button>
+            <button id="btn4">Optimizing</button>
+        </div>
+        <div class="main">
+            <div id="panel1" class="panel">
+                <div style="">
+                    <h2>A simple yet tedious game</h2>
+                    <ul>
+                        <li>Each player have an energy pool that is used to make moves.</li>
+                        <li>Each round each player choose how much energy to use</li>
+                        <li>After each round each player recover 1 energy.</li>
+                        <li>Each round one of the player is randomly awarded a point</li>
+                        <li>The first player to reach 3 points wins the set.</li>
+
+                        <li>You play against a Dummy.</li>
+                        <li>The dummy always use 1 energy.</li>
+                    </ul>
+                    <p>
+                        Formula to determine the winner.
+                    </p>
+                    <ul>
+                        <li>Let <b>E</b> = energy used by the Player</li>
+                        <li>The dummy always use 1 energy</li>
+                        <li>A random number <b>R</b> is chosen between 0 and (E + 1).</li>
+                        <li>If R &lt; E1, the player wins the point.</li>
+                        <li>Otherwise, the bot wins the point.</li>
+                    </ul>
+                    <p>
+                        This means the probability that the player wins is <b>E / (E + 1)</b>.
+                    </p>
+                </div>
+                <div style="">
+                    <h2>Try it !</h2>
+                    <div id="interactiveSimArea" style="min-height:220px;"></div>
+                    <button id="simStepBtn">Play a round</button>
+                    <button id="simResetBtn">Reset</button>
+                </div>
+            </div>
+            <div id="panel2" class="panel">
+                <div style="display: flex; flex-flow: column;">
+                    <h2>Let a bot do the work</h2>
+                    <label for="strategyBox">function botStrategy(energy, botPoint, botSet, dummyPoint, dummyPoint)</label>
+                    <textarea id="strategyBox" rows="6" cols="40">
+//example strategy for the bot, you can do better !
+return (botPoint > dummyPoint) ? 1+energy/100 : 0.99</textarea>
+                    <button id="applyStrategy">Apply</button>
+                    <button id="pauseBtn">Pause</button>
+                </div>
+                <div style="">
+                    <h2>Can you consistently beat the dummy ?</h2>
+                    <div id="autoSimArea" style="min-height:220px;"></div>
+                </div>
+            </div>
+            <div id="panel3" class="panel">
+                <div style="display: flex; flex-flow: column; width: 300px">
+                    <h2>Let's tinker !</h2>
+                    <p>Use the precomputed object m for a faster simulation.</p>
+                    <p>Use the botID to simultaneously evaluate a lot of diffent strategy and get a feel for what could be the best strategy.</p>
+                </div>
+                <div style="display: flex; flex-flow: column;">
+                    <label for="strategyConst">Pre-computed object "m" to be used by botStrategy</label>
+                    <textarea id="strategyConst" rows="15" cols="40">
+let m = Array(100);
+for (let i = 0; i < 100; i++) {
+    const e = i*0.1;
+    m[i] = [
+        [e, 1, 1],
+        [1, e, 1],
+        [1, 1, e]
+    ];
+};
+return m;
+</textarea>
+                </div>
+                <div style="display: flex; flex-flow: column;">
+                    <label for="strategyFunc">function botStrategy(botID, energy, botPoint, dummyPoint, m)</label>
+                    <textarea id="strategyFunc" rows="12" cols="40">
+return m[botID][botPoint][dummyPoint] * energy / 100</textarea>
+                    <br>
+                    <button id="chartApply">Apply</button>
+                    <button id="chartPause">Pause</button>
+                </div>
+                <div id="chartPanel" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                    <div id="bestSetWinRatio" style="font-size:1.5em; font-weight:bold; color:#1a73e8; margin-bottom:16px;">
+                        Best Set Win Ratio: 0%
+                    </div>
+                    <div id="ticksPerSecond" style="padding:8px 16px;font-size:1em;color:#666;z-index:3000;">
+                        fps: 0
+                    </div>
+                    <canvas id="ratioChart" width="700" height="400"></canvas>
+                </div>
+            </div>
+            <div id="panel4" class="panel">
+                <div style="display: flex; flex-flow: column; width: 300px">
+                    <h2>Fuck the tickering</h2>
+                    <p>What are we ? Macro Data Refinners ? let's automate the tinkering</p>
+                </div>
+                <div style="display: flex; flex-flow: column;">
+                    <label for="optimObjective">Given a 3x3 matrix compute the objective that the optimizer should optimize for</label>
+                    <textarea id="optimObjective" rows="12" cols="40">
+let v = strategyMatrix;
+let matrixWin = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(1));
+matrixWin[setSize] = Array(setSize + 1).fill(0);
+let matrixEnergy = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(0));
+
+for (let s = setSize - 1; s >= 0; s--) {
+    for (let k = setSize - 1; k >= 0; k--) {
+        e0 = v[s * setSize + k];
+        p0 = e0 / (e0 + 1)
+
+        vx = matrixWin[s][k + 1] * p0
+        vy = matrixWin[s + 1][k] * (1 - p0)
+        matrixWin[s][k] = vx + vy;
+
+        ex = matrixEnergy[s][k + 1] * p0
+        ey = matrixEnergy[s + 1][k] * (1 - p0)
+        matrixEnergy[s][k] = e0 - 1 + ex + ey;
+    }
+}
+return 1000 * matrixEnergy[0][0] * matrixEnergy[0][0] - matrixWin[0][0]
+</textarea>
+                    <button id="optimApply">Apply</button>
+                    <button id="optimPause">Pause</button>
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 24px; align-items: flex-start;">
+                    <pre id="optimizerSolution" style="background:#f8f8f8; border-radius:6px;">
+[
+ [
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ],
+ [
+  1,
+  1,
+  1
+ ]
+]
+</pre>
+
+                </div>
+                <div id="optimizerChartDiv" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                    <canvas id="optimizerCanvas" width="650" height="200"></canvas>
+                </div>
             </div>
         </div>
-        <!-- Right: Chart -->
-        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
-            <canvas id="ratioChart" width="700" height="400"></canvas>
-        </div>
     </div>
-   
     <script>
-        let chart, simInterval;
-
-        function setupChart(N) {
-            const ctx = document.getElementById('ratioChart').getContext('2d');
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Array.from({ length: N }, (_, i) => `Bot ${i + 1}`),
-                    datasets: [
-                        {
-                            label: 'Set Win Ratio (%)',
-                            type: 'bar',
-                            data: [],
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                            order: 1
-                        },
-                        {
-                            label: 'CI Lower Bound',
-                            type: 'scatter',
-                            data: [],
-                            backgroundColor: 'rgba(255, 99, 132, 1)',
-                            pointRadius: 4,
-                            order: 2
-                        },
-                        {
-                            label: 'CI Upper Bound',
-                            type: 'scatter',
-                            data: [],
-                            backgroundColor: 'rgba(75, 192, 192, 1)',
-                            pointRadius: 4,
-                            order: 2
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: { display: true, text: 'Win Ratio (%)' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: true }
-                    }
+        const buttons = [
+            document.getElementById('btn1'),
+            document.getElementById('btn2'),
+            document.getElementById('btn3'),
+            document.getElementById('btn4')
+        ];
+        const panels = [
+            document.getElementById('panel1'),
+            document.getElementById('panel2'),
+            document.getElementById('panel3'),
+            document.getElementById('panel4')
+        ];
+        const render = [
+            manualRender,
+            automationRender,
+            chartRender,
+            optimizerRender
+        ];
+        buttons.forEach((btn, idx) => {
+            btn.onclick = function () {
+                buttons.forEach(b => b.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                panels[idx].classList.add('active');
+                if (render[idx]) {
+                    render[idx]();
                 }
-            });
-        }
-
-        function updateUI(score) {
-            document.getElementById('totalPointsPlayed').textContent = `Total Points Played: ${score.totalPoints[1] + score.totalPoints0[1]}`;
-            const labels = score.setWinRatios.map(r => `Bot ${r.bot}`);
-            const ratios = score.setWinRatios.map(r => (r.ratio * 100));
-            const ciLows = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciLow * 100 }));
-            const ciHighs = score.setWinRatios.map((r, i) => ({ x: i, y: r.ciHigh * 100 }));
-
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = ratios;
-            chart.data.datasets[1].data = ciLows;
-            chart.data.datasets[2].data = ciHighs;
-            chart.update();
-        }
-
-        function startSimulation(N, Emin, Emax, STEPS_PER_TICK) {
-            if (simInterval) clearInterval(simInterval);
-            window.simulation.init(N, Emin, Emax, STEPS_PER_TICK);
-            setupChart(N);
-            simInterval = setInterval(() => {
-                window.simulation.simulateStep();
-                updateUI(window.simulation.score);
-            }, 1000);
-        }
-
-        // Initial setup
-        document.addEventListener('DOMContentLoaded', function () {
-            const N = parseInt(document.getElementById('inputN').value, 10);
-            const Emin = parseFloat(document.getElementById('inputEmin').value);
-            const Emax = parseFloat(document.getElementById('inputEmax').value);
-            const STEPS_PER_TICK = parseInt(document.getElementById('inputSteps').value, 10);
-
-            startSimulation(N, Emin, Emax, STEPS_PER_TICK);
-
-            document.getElementById('simForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                const N = parseInt(document.getElementById('inputN').value, 10);
-                const Emin = parseFloat(document.getElementById('inputEmin').value);
-                const Emax = parseFloat(document.getElementById('inputEmax').value);
-                const STEPS_PER_TICK = parseInt(document.getElementById('inputSteps').value, 10);
-                startSimulation(N, Emin, Emax, STEPS_PER_TICK);
-            });
+            };
         });
     </script>
-
 </body>
 </html>
+

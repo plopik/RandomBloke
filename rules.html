@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Rules - Bot Battle</title>
+</head>
+<body>
+    <h1>Mini-Infinite-Tennis - Game Rules</h1>
+    <ul>
+
+        <li>Each player have an energy pool that is used to make moves.</li>
+        <li>Each round each player choose how much energy to use</li>
+        <li>After each round each player recover 1 energy.</li>
+        <li>Each round one of the player is randomly awarded a point</li>
+        <li>The first player to reach 3 points wins the set.</li>
+        <li>After a set, scores are reset and a new set begins.</li>
+
+        <li>There are N bots competing against a Dummy.</li>
+        <li>The dummy always use 1 energy.</li>
+        <li>Set win ratios and confidence intervals are displayed in the chart.</li>
+        <li>You can edit the strategy for the bots using the provided text box.</li>
+    </ul>
+
+    <h2>How is the Winner Chosen Each Round?</h2>
+    <p>
+        In each round, both the Player1 and player2 choose how much energy to use. The winner is chosen randomly, but the chance of winning is proportional to the energy spent:
+    </p>
+<pre>
+Let <b>E1</b> = energy used by player 1<br>
+Let <b>E2</b> = energy used by player 2<br>
+A random number <b>R</b> is chosen between 0 and (A + B).<br>
+If R &lt; E1, player 1 wins the point.<br>
+Otherwise, player 2 wins the point.
+</pre>
+    <p>
+        This means the probability that player 1 wins is <b>E1 / (E1 + E2)</b>.
+    </p>
+</body>
+</html>
