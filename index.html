@@ -100,8 +100,8 @@
                     <ul>
                         <li>Let <b>E</b> = energy used by the Player</li>
                         <li>The dummy always use 1 energy</li>
-                        <li>A random number <b>R</b> is chosen between 0 and (E + 1).</li>
-                        <li>If R &lt; E1, the player wins the point.</li>
+                        <li>A random number <b>R</b> is chosen between <b>0</b> and  <b>(E + 1)</b>.</li>
+                        <li>If  <b>R</b> &lt; <b>E</b>, the player wins the point.</li>
                         <li>Otherwise, the bot wins the point.</li>
                     </ul>
                     <p>
@@ -110,9 +110,11 @@
                 </div>
                 <div style="">
                     <h2>Try it !</h2>
-                    <div id="interactiveSimArea" style="min-height:220px;"></div>
                     <button id="simStepBtn">Play a round</button>
                     <button id="simResetBtn">Reset</button>
+                    <br><br>  
+                    <div id="interactiveSimArea" style="min-height:220px;"></div>
+
                 </div>
             </div>
             <div id="panel2" class="panel">
@@ -121,7 +123,9 @@
                     <label for="strategyBox">function botStrategy(energy, botPoint, botSet, dummyPoint, dummyPoint)</label>
                     <textarea id="strategyBox" rows="6" cols="40">
 //example strategy for the bot, you can do better !
-return (botPoint > dummyPoint) ? 1+energy/100 : 0.99</textarea>
+function strategy(botID, energy, botPoint, dummyPoint) {
+return (botPoint > dummyPoint) ? 1+energy/100 : 0.99
+}</textarea>
                     <button id="applyStrategy">Apply</button>
                     <button id="pauseBtn">Pause</button>
                 </div>
@@ -133,28 +137,24 @@ return (botPoint > dummyPoint) ? 1+energy/100 : 0.99</textarea>
             <div id="panel3" class="panel">
                 <div style="display: flex; flex-flow: column; width: 300px">
                     <h2>Let's tinker !</h2>
-                    <p>Use the precomputed object m for a faster simulation.</p>
-                    <p>Use the botID to simultaneously evaluate a lot of diffent strategy and get a feel for what could be the best strategy.</p>
-                </div>
-                <div style="display: flex; flex-flow: column;">
-                    <label for="strategyConst">Pre-computed object "m" to be used by botStrategy</label>
-                    <textarea id="strategyConst" rows="15" cols="40">
-let m = Array(100);
-for (let i = 0; i < 100; i++) {
-    const e = i*0.1;
-    m[i] = [
-        [e, 1, 1],
-        [1, e, 1],
-        [1, 1, e]
-    ];
-};
-return m;
-</textarea>
+                    <p>Use the botID to simultaneously evaluate a lot of diffent strategy at once</p>
+                    <p>Get a feel for what could be the best strategy.</p>
                 </div>
                 <div style="display: flex; flex-flow: column;">
                     <label for="strategyFunc">function botStrategy(botID, energy, botPoint, dummyPoint, m)</label>
                     <textarea id="strategyFunc" rows="12" cols="40">
-return m[botID][botPoint][dummyPoint] * energy / 100</textarea>
+//example strategy for the bots, you can do better !
+let m = Array(100);
+for (let i = 0; i < 100; i++) {
+    const e = i*0.1;
+    m[i] = e;
+};
+function strategy(botID, energy, botPoint, dummyPoint) {
+    let test = botPoint+dummyPoint > 3;
+    let value = (test) ? 1+m[botID] : 1;
+    let normalized = value * energy / 1000;
+    return normalized;
+}</textarea>
                     <br>
                     <button id="chartApply">Apply</button>
                     <button id="chartPause">Pause</button>

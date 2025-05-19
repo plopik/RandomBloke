@@ -33,8 +33,9 @@ function automationReset() {
         energy: 1,
         lastRand: null,
     };
-    const code = document.getElementById('strategyBox').value;
-    autoStrategy = eval('(function botStrategy(energy, botPoint, botSet, dummyPoint, dummySet){' + code + '})');
+
+    eval(document.getElementById('strategyBox').value);
+    autoStrategy = strategy
 
     clearInterval(autoInterval);
     autoInterval = setInterval(() => {
@@ -53,7 +54,7 @@ function automationReset() {
     autoUpdateSimDisplay();
 }
 
-function autoStrategy(energy, botPoint, botSet, dummyPoint, dummySet) {
+function autoStrategy(energy, botPoint, dummyPoint) {
     return 1;
 }
 
@@ -61,7 +62,7 @@ function autoStepSim() {
     const usedDummy = 1;
     const steps = stepPerTick;
     for (let i = 0; i < steps; i++) {
-        const usedPlayer = Math.min(autoState.energy, autoStrategy(autoState.energy, autoState.botPoint, autoState.botSet, autoState.dummyPoint, autoState.dummySet));
+        const usedPlayer = Math.min(autoState.energy, autoStrategy(autoState.energy, autoState.botPoint, autoState.dummyPoint));
         autoState.energy = autoState.energy - usedPlayer + 1;
         const total = usedPlayer + usedDummy;
         autoState.lastRand = Math.random() * total;

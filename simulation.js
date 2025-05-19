@@ -2,7 +2,7 @@ let N = 100;
 let chartStepPerTick = 1000;
 let score;
 let optimSetSize = 3;
-let chartingBotStrategy = null;
+let chartBotStrategyAux = null;
 let chart, chartInterval;
 let chartPaused = false;
 let simInterval;
@@ -36,19 +36,12 @@ function chartReset() {
         energy: Array(N).fill(1),
         setWinRatios: [],
         totalPointsPlayed: 0,
-        bestSetWinRatio: 0,
-        m: null,
+        bestSetWinRatio: null
     };
     setupChart();
-    
-    const codeConst = document.getElementById('strategyConst').value;
-    score.m = eval('(function f(){' + codeConst + '})')();
-    
-    const code = document.getElementById('strategyFunc').value;
-    chartBotStrategy = eval('(function botStrategy(botID, energy, botPoint, dummyPoint, m){' + code + '})');
 
-    console.log("m", score.m);
-    console.log("chartBotStrategy", chartBotStrategy);
+    eval(document.getElementById('strategyFunc').value);
+    chartBotStrategyAux = strategy;
 
     tickCount = 0;
     lastTickTime = Date.now();
@@ -113,14 +106,6 @@ function setupChart() {
                     backgroundColor: 'rgba(75, 192, 192, 1)',
                     pointRadius: 4,
                     order: 2
-                },
-                {
-                    label: 'Theoretical value',
-                    type: 'scatter',
-                    data: [],
-                    backgroundColor: 'rgba(192, 192, 75, 1)',
-                    pointRadius: 4,
-                    order: 1
                 }
             ]
         },
@@ -158,8 +143,9 @@ function updateUI(animation) {
     chart.options.animation = animation;
     chart.update();
     // Update best set win ratio display
+    let ratio = score.bestSetWinRatio;
     document.getElementById('bestSetWinRatio').textContent =
-        `Best Set Win Ratio: ${(score.bestSetWinRatio * 100).toFixed(1)}%`;
+        `Best Set Win Ratio: ${(ratio.ratio * 100).toFixed(1)}% [${(ratio.ciLow * 100).toFixed(1)}-${(ratio.ciHigh * 100).toFixed(1)}]`;
 }
 
 function simulateStep() {
@@ -167,7 +153,7 @@ function simulateStep() {
         for (let i = 0; i < N; i++) {
             
             score.energy[i] = Math.min(score.energy[i] + 1, 10000);
-            const usedBot = Math.min(score.energy[i], chartBotStrategy(i, score.energy[i], score.botPoints[i], score.dummyPoints[i], score.m));
+            const usedBot = Math.min(score.energy[i], chartBotStrategyAux(i, score.energy[i], score.botPoints[i], score.dummyPoints[i]));
             const used0 = 1;
 
             score.energy[i] -= usedBot;
@@ -223,7 +209,7 @@ function simulateStep() {
     let best = 0;
     for (let i = 0; i < score.setWinRatios.length; i++) {
         if (score.setWinRatios[i].ciLow > best) {
-            best = score.setWinRatios[i].ciLow;
+            best = score.setWinRatios[i];
         }
     }
     if (score.totalPointsPlayed > 1000) {
