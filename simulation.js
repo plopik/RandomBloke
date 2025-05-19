@@ -206,7 +206,7 @@ function simulateStep() {
         });
     }
     // After the for loop that fills setWinRatios:
-    let best = 0;
+    let best = score.setWinRatios[0];
     for (let i = 0; i < score.setWinRatios.length; i++) {
         if (score.setWinRatios[i].ciLow > best.ciLow) {
             best = score.setWinRatios[i];
