@@ -124,7 +124,7 @@
                     <textarea id="strategyBox" rows="6" cols="40">
 //example strategy for the bot, you can do better !
 function strategy(botID, energy, botPoint, dummyPoint) {
-return (botPoint > dummyPoint) ? 1+energy/100 : 0.99
+    return (botPoint > dummyPoint) ? 1+energy/100 : 0.99
 }</textarea>
                     <button id="applyStrategy">Apply</button>
                     <button id="pauseBtn">Pause</button>

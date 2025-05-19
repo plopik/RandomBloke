@@ -40,13 +40,13 @@ function stepSim() {
         pointWinner = 0;
     }
     if (simState.points[0] > 2) {
-        setwinner = true;
+        setWinner = true;
         simState.sets[0]++;
         simState.points[0] = 0;
         simState.points[1] = 0;
     }
     if (simState.points[1] > 2) {
-        setwinner = true;
+        setWinner = true;
         simState.sets[1]++;
         simState.points[0] = 0;
         simState.points[1] = 0;
@@ -81,11 +81,11 @@ function updateSimDisplay() {
     logStr = '';
     for (let i = 0; i < Math.min(simState.roundLog.length,10); i++) {
         let winner = simState.roundLog[i][1];
-        let won = simState.roundLog[i][2] ? 'Set' : 'Point'
+        let won = simState.roundLog[i][2] ? 'Point and <span style="color:#990000;">SET</span> for' : 'Point for '
         if (winner == 1) {
-            logStr += `R : ${simState.roundLog[i][0]} - <span style="color:#1a73e8;">Player win the ${won}</span><br>`;
+            logStr += `<b>R</b> : ${simState.roundLog[i][0]} - ${won} <span style="color:#1a73e8;">Player</span><br>`;
         } else {
-            logStr += `R : ${simState.roundLog[i][0]} - <span style="color:#e8711a;">Dummy win the ${won}</span><br>`;
+            logStr += `<b>R</b> : ${simState.roundLog[i][0]} - ${won} <span style="color:#e8711a;">Dummy</span><br>`;
         }
     }
 
@@ -124,6 +124,7 @@ function updateSimDisplay() {
                 <span style="">Energy</span>
                 <span style="color:#e8711a;">1</span>
             </div>
+            Log : <br>
             ${logStr}
         </div>
     `;
