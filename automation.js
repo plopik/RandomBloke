@@ -2,9 +2,10 @@ let autoState = null;
 let autoPaused = false;
 let autoInterval = null;
 let stepPerTick = 1000;
+let autoActive = false;
 
 function automationRender() {
-
+    autoActive = true;
     if (!autoState) {
         const applyStrategyBtn = document.getElementById('applyStrategy');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -23,6 +24,10 @@ function automationRender() {
         );
         automationReset();
     }
+}
+
+function autoHide() {
+    autoActive = false;
 }
 
 function automationPause() {
@@ -52,6 +57,7 @@ function automationReset() {
     clearInterval(autoInterval);
     autoInterval = setInterval(() => {
         if (autoPaused) return;
+        if (!autoActive) return;
         try {
             autoStepSim();
             autoUpdateSimDisplay();

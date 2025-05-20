@@ -26,7 +26,7 @@
         }
 
         .sidebar {
-            width: 200px;
+            flex: 0 0 200px;
             background: #f4f4f4;
             border-right: 1px solid #ddd;
             display: flex;
@@ -69,7 +69,7 @@
                 display: flex;
                 flex-flow: row wrap;
                 justify-content: space-evenly;
-                align-items: stretch;
+                align-items: self-start;
                 border: dashed 1px #ccc;
             }
     </style>
@@ -99,12 +99,13 @@
                     But honestly, other sports that don’t use sets still have comebacks, drama, and breaks for rest and strategy.
 
                     <p>So what really makes the usage of Sets different?</p>
-                    <p>One thing stands out: sets seem to make some points more impactful than others. But is that even true? And if so how much?</p>
-                    <p>Let's find out!</p>
+                    <p>One thing stands out: Sets seem to make some points more impactful than others.</p>
+                    <p>But it made me wonder... Is that even true? And if so how much?</p>
+                    <p>So I made this ! (WIP)</p>
                 </div>
             </div>
             <div id="panel1" class="panel">
-                <div style="flex : 1; min-width: 300px">
+                <div style="flex : 1 0 300px;">
                     <h2>A Simple Yet Tedious Game</h2>
 
                     <ul>
@@ -113,9 +114,6 @@
                         <li>After each round, both players recover 1 energy.</li>
                         <li>In each round, one of the players is randomly awarded a point.</li>
                         <li>The first player to reach 3 points wins the set.</li>
-                        <li>You play against a dummy opponent.</li>
-                        <li>The dummy always uses 1 energy per round.</li>
-                        <li>You can play endlessly as we are looking for </li>
                     </ul>
 
                     <p>How the winner of a point is determined:</p>
@@ -129,12 +127,18 @@
                     </ul>
 
                     <p>This means the probability that the player wins the point is <b>E / (E + 1)</b>.</p>
+                    <ul>
+                        <li>You play against a dummy opponent.</li>
+                        <li>The dummy always uses 1 energy per round.</li>
+                        <li>The game doesn't "end" — it's just a toy game for trying out different strategies </li>
+                    </ul>
                     <p>
-                        Note: This game doesn't have a real "end" — it's just a test environment for trying out different strategies.
-                        You can play as many rounds or sets as you want to explore how energy usage affects your chances of winning.
+                        Feel free to keep playing — but fair warning: even with optimal strategy, your edge over the dummy is so small that playing manually feels more like a test of patience than skill.
+                        You might want to head over to the next tab sonner rather than later.
                     </p>
+
                 </div>
-                <div style="flex: 1">
+                <div style="flex: 0 0 380px">
                     <h2>Try it!</h2>
                     <button id="simStepBtn">Play a round</button>
                     <button id="simResetBtn">Reset</button>
@@ -143,31 +147,31 @@
                 </div>
             </div>
             <div id="panel2" class="panel">
-                <div style="display: flex; flex-flow: column;">
+                <div style="flex : 1 0 400px; display: flex; flex-flow: column; max-height:300px">
                     <h2>Let a bot do the work</h2>
-                    <label for="strategyBox">function botStrategy(botID, energy, botPoint, dummyPoint)</label>
+                    <p>Tell the bot what to do and see if you can find a good strategy off the top of your head</p>
                     <textarea id="strategyBox" rows="6" cols="40">
-//example strategy for the bot, you can do better!
+//Example strategy for the bot, you can do better!
 function strategy(botID, energy, botPoint, dummyPoint) {
     return (botPoint > dummyPoint) ? 1+energy/100 : 0.99
 }</textarea>
                     <button id="applyStrategy">Apply</button>
                     <button id="pauseBtn">Pause</button>
                 </div>
-                <div style="">
+                <div style="flex 0 0 400px">
                     <h2>Can you consistently beat the dummy?</h2>
                     <div id="autoSimArea" style="min-height:220px;"></div>
                 </div>
             </div>
-            <div id="panel3" class="panel">
-                <div style="display: flex; flex-flow: column; width: 300px">
+            <div id="panel3" class="panel" style="align-items:self-start">
+                <div style="flex : 0 0 400px; display: flex; flex-flow: column; width: 300px">
                     <h2>Let's tinker!</h2>
                     <p>Use the botID to simultaneously evaluate a lot of different strategies at once.</p>
                     <p>Get a feel for what could be the best strategy.</p>
                 </div>
-                <div style="display: flex; flex-flow: column;">
-                    <textarea id="strategyFunc" rows="12" cols="40">
-//example strategy for the bots, you can do better!
+                <div style="flex : 1 0 400px; display: flex; flex-flow: column; max-height:250px">
+                    <textarea id="strategyFunc" rows="5" cols="40">
+//Example strategy for the bots, you can do better!
 let m = Array(100);
 for (let i = 0; i < 100; i++) {
     const e = i*0.1;
@@ -183,26 +187,27 @@ function strategy(botID, energy, botPoint, dummyPoint) {
                     <button id="chartApply">Apply</button>
                     <button id="chartPause">Pause</button>
                 </div>
-                <div id="chartPanel" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px; max-height: 500px">
+                <div id="chartPanel" style="flex: 1 1 80%; background:#fff; max-height: 500px">
                     <div id="bestSetWinRatio" style="font-size:1.5em; font-weight:bold; color:#1a73e8; margin-bottom:16px;">
                         Best Set Win Ratio: 0%
                     </div>
-                    <div id="ticksPerSecond" style="padding:8px 16px;font-size:1em;color:#666;z-index:3000;">
+                    <div id="ticksPerSecond" style="display:none; padding:8px 16px;font-size:1em;color:#666;">
                         fps: 0
                     </div>
-                    <canvas id="ratioChart" width="800" height="200"></canvas>
+                    <canvas id="ratioChart" width="500" height="200"></canvas>
                 </div>
             </div>
             <div id="panel4" class="panel">
-                <div style="display: flex; flex-flow: column; width: 300px">
+                <div style="flex: 0 0 200px; display: flex; flex-flow: column; width: 300px">
                     <h2>Forget the tinkering</h2>
                     <p>What are we? Macro Data Refiners? Let's automate the tinkering.</p>
                     <p>At this point, it's not much of a game, so here is a solution. Feel free to discard it and find your own.</p>
                     <p>Or even better, maybe you can find a better one?</p>
                 </div>
-                <div style="display: flex; flex-flow: column;">
-                    <label for="optimObjective">Given a 3x3 matrix compute the objective that the optimizer should optimize for</label>
+                <div style="flex: 1 0 200px; display: flex; flex-flow: column;">
+                    <label for="optimObjective"></label>
                     <textarea id="optimObjective" rows="12" cols="40">
+//Example objective function for the optimizer
 function objective(v) {
     let matrixWin = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(1));
     matrixWin[setSize] = Array(setSize + 1).fill(0);
@@ -228,7 +233,8 @@ function objective(v) {
                     <button id="optimApply">Apply</button>
                     <button id="optimPause">Pause</button>
                 </div>
-                <div style="display: flex; flex-direction: row; gap: 24px; align-items: flex-start;">
+                <div style="flex: 0 0 200px; padding: 20px">
+                    <label for="optimizerSolution">Optimizer output :</label>
                     <pre id="optimizerSolution" style="background:#f8f8f8; border-radius:6px;">
 [
  [
@@ -249,8 +255,8 @@ function objective(v) {
 ]
 </pre>
                 </div>
-                <div id="optimizerChartDiv" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
-                    <canvas id="optimizerCanvas" width="650" height="200"></canvas>
+                <div id="optimizerChartDiv" style="flex: 1 1 80%; background:#fff; max-height:400px">
+                    <canvas id="optimizerCanvas" width="400" height="200"></canvas>
                 </div>
             </div>
 
@@ -280,10 +286,18 @@ function objective(v) {
             chartRender,
             optimizerRender
         ];
+        const hide = [
+            null,
+            null,
+            autoHide,
+            chartHide,
+            optimHide
+        ];
         buttons.forEach((btn, idx) => {
             btn.onclick = function () {
                 buttons.forEach(b => b.classList.remove('active'));
                 panels.forEach(p => p.classList.remove('active'));
+                hide.forEach(h => h && h());
                 btn.classList.add('active');
                 panels[idx].classList.add('active');
                 if (render[idx]) {

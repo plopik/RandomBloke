@@ -7,8 +7,10 @@ let optimInterval = null;
 let optimPaused = false;
 let optimizerStart = null;
 let optimObjective = null;
+let optimActive = false;
 
 function optimizerRender() {
+    optimActive = true;
     if (!optimizerOut) {
         const applyStrategyBtn = document.getElementById('optimApply');
         const pauseBtn = document.getElementById('optimPause');
@@ -26,6 +28,10 @@ function optimizerRender() {
         );
         optimReset();
     }
+}
+
+function optimHide() {
+    optimActive = false;
 }
 
 function optimPause() {
@@ -51,6 +57,7 @@ function optimReset() {
     optimInterval = setInterval(() => {
         try {
             if (optimPaused) return;
+            if (!optimActive) return;
             const solution = optimizeBotStrategy();
             optimChart.data.labels = optimBestxs.map((_, i) => `Gen ${i + 1}`);
             optimChart.data.datasets[0].data = optimBestxs.map((r) => (r * 100));

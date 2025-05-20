@@ -1,4 +1,4 @@
-let N = 100;
+let N = 50;
 let chartStepPerTick = 1000;
 let score;
 let optimSetSize = 3;
@@ -6,9 +6,10 @@ let chartBotStrategyAux = null;
 let chart, chartInterval;
 let chartPaused = false;
 let simInterval;
+let chartActive = false;
 
 function chartRender() {
-
+    chartActive = true;
     if (!score) {
         const applyStrategyBtn = document.getElementById('chartApply');
         const pauseBtn = document.getElementById('chartPause');
@@ -27,6 +28,11 @@ function chartRender() {
         chartReset();
     }
 }
+
+function chartHide() {
+    chartActive = false;
+}
+
 function chartPause() {
     chartPaused = !chartPaused;
     const pauseBtn = document.getElementById('chartPause');
@@ -61,7 +67,8 @@ function chartReset() {
     console.log('Simulation start');
     if (chartInterval) clearInterval(simInterval);
     chartInterval = setInterval(() => {
-        if (chartPaused) return; // Skip simulation step if paused
+        if (chartPaused) return;
+        if (!chartActive) return;
         try {
             simulateStep();
             const now = Date.now();
