@@ -13,6 +13,7 @@
     <script src="manual.js"></script>
     <script src="automation.js"></script>
     <script src="optimizer.js"></script>
+    <script src="longerset.js"></script>
 
     <style>
         body {
@@ -78,13 +79,14 @@
     <div class="container">
         <div class="sidebar">
             <button id="btn0" style="border:1px solid black; padding: 5px;">
-                <h2 >Mini Random Tennis</h2>
+                <h2>Mini Random Tennis</h2>
             </button>
             <button id="btn1">Tutorial</button>
             <button id="btn2">Automating</button>
             <button id="btn3">Charting</button>
             <button id="btn4">Optimizing</button>
-</div>
+            <button id="btn5">What if</button>
+        </div>
         <div class="main">
             <div id="panel0" class="panel active">
                 <div style="">
@@ -259,39 +261,62 @@ function objective(v) {
                     <canvas id="optimizerCanvas" width="400" height="200"></canvas>
                 </div>
             </div>
+            <div id="panel5" class="panel">
+                <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
+                    <h2>What if there are more points in a set ?</h2>
+                    <label for="optim2SetSize">Number of Point to win a Set :</label>
+                    <input type="text" id="optim2SetSize" value="10" style="width: 20px;">
+                    <p>We may need a better way to find the best strategy when N gets bigger...</p>
+                </div>
+                <div style="flex: 1 0 600px; display: flex; flex-flow: column;">
+                    <label for="optim2Objective"></label>
+                    <textarea id="optim2Objective" rows="12" cols="40"></textarea>
+                    <button id="optim2Apply">Apply</button>
+                    <button id="optim2Pause">Pause</button>
+                </div>                
+                <div style="flex: 0 0 300px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="optim2Heatmap" width="400" height="400"></canvas>
+                </div>
+                <div id="optim2ChartDiv" style="flex: 1 0 1000px; background:#fff; max-height:400px">
+                    <canvas id="optim2Canvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
+                </div>
+
+            </div>
 
         </div>
     </div>
     <script>
 
+        const panelNumber = 6;
+        const buttons = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`btn${i}`));
+        const panels = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`panel${i}`));
 
-        const buttons = [
-            document.getElementById('btn0'),
-            document.getElementById('btn1'),
-            document.getElementById('btn2'),
-            document.getElementById('btn3'),
-            document.getElementById('btn4')
-        ];
-        const panels = [
-            document.getElementById('panel0'),
-            document.getElementById('panel1'),
-            document.getElementById('panel2'),
-            document.getElementById('panel3'),
-            document.getElementById('panel4')
-        ];
+        const optim2 = new optimlongerset(
+            document.getElementById('optim2Pause'),
+            document.getElementById('optim2Apply'),
+            document.getElementById('optim2Objective'),
+            document.getElementById('optim2Canvas'),
+            document.getElementById('optim2Heatmap'),
+            document.getElementById('optim2SetSize'),
+        );
+        //console.log(optim2);
+        //optim2.render();
+
         const render = [
             null,
             manualRender,
             automationRender,
             chartRender,
-            optimizerRender
+            optimizerRender,
+            optim2.render.bind(optim2)
         ];
         const hide = [
             null,
             null,
             autoHide,
             chartHide,
-            optimHide
+            optimHide,
+            optim2.hide.bind(optim2)
         ];
         buttons.forEach((btn, idx) => {
             btn.onclick = function () {
