@@ -99,10 +99,7 @@ class optimlongerset {
 
     setupChart() {
         if (this.chart) this.chart.destroy();
-        console.log(this.chartCanvas.width, this.chartCanvas.height, this.chartCanvas.clientWidth, this.chartCanvas.clientHeight);
         this.chartCanvas.width = this.chartCanvas.height * this.chartCanvas.parentNode.clientWidth / this.chartCanvas.parentNode.clientHeight;
-        console.log(this.chartCanvas.width, this.chartCanvas.height, this.chartCanvas.clientWidth, this.chartCanvas.clientHeight);
-        console.log(this.chartCanvas.parentNode.clientWidth, this.chartCanvas.parentNode.clientHeight);
 
         this.chart = new Chart(this.chartCanvas.getContext('2d'), {
             type: 'bar',

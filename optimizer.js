@@ -73,9 +73,10 @@ function optimReset() {
 }
 
 function optimSetupChart() {
-    const ctx = document.getElementById('optimizerCanvas').getContext('2d');
-    if (optimChart) return;
-    optimChart = new Chart(ctx, {
+    var ctx = document.getElementById('optimizerCanvas')
+    ctx.width = ctx.height * ctx.parentNode.clientWidth / ctx.parentNode.clientHeight;
+
+    optimChart = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: [],
