@@ -59,10 +59,7 @@ function chartReset() {
 
     eval(window.chartStrategyBox.getValue());
     chartBotStrategyAux = strategy;
-
-    tickCount = 0;
-    lastTickTime = Date.now();
-    startTime = Date.now();
+    let startTime = Date.now();
 
     console.log('Simulation start');
     if (chartInterval) clearInterval(simInterval);
@@ -74,16 +71,6 @@ function chartReset() {
             const now = Date.now();
             const animation = now - startTime < 60000;
             updateUI(animation);
-
-            // Count ticks
-            tickCount++;
-
-            if (now - lastTickTime >= 1000) {
-                document.getElementById('ticksPerSecond').textContent =
-                    `fps:${tickCount}`;
-                tickCount = 0;
-                lastTickTime = now;
-            }
         }
         catch (e) {
             clearInterval(chartInterval);
@@ -95,9 +82,10 @@ function chartReset() {
 }
 
 function setupChart() {
-    const ctx = document.getElementById('ratioChart').getContext('2d');
-    if (chart) return;
-    chart = new Chart(ctx, {
+    const ctx = document.getElementById('ratioChart');
+    ctx.width = ctx.height * ctx.parentNode.clientWidth / ctx.parentNode.clientHeight;
+    if (chart) chart.destroy();
+    chart = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: Array.from({ length: N }, (_, i) => `Bot ${i}`),
@@ -140,9 +128,6 @@ function setupChart() {
             }
         }
     });
-    //const tomap = simulation.computeTheoreticalWinRatios(simulation.m);
-    //const theoretical = tomap.map((r) => (r * 100));
-    //chart.data.datasets[3].data = theoretical;
     chart.update();
 }
 

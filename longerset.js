@@ -100,7 +100,6 @@ class optimlongerset {
     setupChart() {
         if (this.chart) this.chart.destroy();
         this.chartCanvas.width = this.chartCanvas.height * this.chartCanvas.parentNode.clientWidth / this.chartCanvas.parentNode.clientHeight;
-
         this.chart = new Chart(this.chartCanvas.getContext('2d'), {
             type: 'bar',
             data: {
