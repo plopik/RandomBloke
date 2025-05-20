@@ -6,6 +6,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/optimization-js@latest/dist/optimization.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
     <script src="simulation.js"></script>
     <script src="manual.js"></script>
     <script src="automation.js"></script>
@@ -74,55 +77,77 @@
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2 style="border:1px solid black; padding: 5px;">Mini Random Tennis</h2>
+            <button id="btn0" style="border:1px solid black; padding: 5px;">
+                <h2 >Mini Random Tennis</h2>
+            </button>
             <button id="btn1">Tutorial</button>
             <button id="btn2">Automating</button>
             <button id="btn3">Charting</button>
             <button id="btn4">Optimizing</button>
-        </div>
+</div>
         <div class="main">
-            <div id="panel1" class="panel">
+            <div id="panel0" class="panel active">
                 <div style="">
-                    <h2>A simple yet tedious game</h2>
+                    <h2>What's the deal with this whole <b>Game, Set and Match</b> thing in Tennis ?</h2>
+                    I mean if I want to know who is the best at hitting balls why not just tally the total number of point.<br>
+                    Research and LLMs give some mildly convincing answers, like :
                     <ul>
-                        <li>Each player have an energy pool that is used to make moves.</li>
-                        <li>Each round each player choose how much energy to use</li>
-                        <li>After each round each player recover 1 energy.</li>
-                        <li>Each round one of the player is randomly awarded a point</li>
-                        <li>The first player to reach 3 points wins the set.</li>
+                        <li>Dividing the match into games and sets gives players chances to reset and regroup</li>
+                        <li>A player can lose a few points but still win the match</li>
+                        <li>Sets allow for comebacks, which add drama</li>
+                    </ul>
+                    But honestly, other sports that don’t use sets still have comebacks, drama, and breaks for rest and strategy.
 
-                        <li>You play against a Dummy.</li>
-                        <li>The dummy always use 1 energy.</li>
-                    </ul>
-                    <p>
-                        Formula to determine the winner.
-                    </p>
+                    <p>So what really makes the usage of Sets different?</p>
+                    <p>One thing stands out: sets seem to make some points more impactful than others. But is that even true? And if so how much?</p>
+                    <p>Let's find out!</p>
+                </div>
+            </div>
+            <div id="panel1" class="panel">
+                <div style="flex : 1; min-width: 300px">
+                    <h2>A Simple Yet Tedious Game</h2>
+
                     <ul>
-                        <li>Let <b>E</b> = energy used by the Player</li>
-                        <li>The dummy always use 1 energy</li>
-                        <li>A random number <b>R</b> is chosen between <b>0</b> and  <b>(E + 1)</b>.</li>
-                        <li>If  <b>R</b> &lt; <b>E</b>, the player wins the point.</li>
-                        <li>Otherwise, the bot wins the point.</li>
+                        <li>Each player has an energy pool used to make moves.</li>
+                        <li>In each round, the player chooses how much energy to use.</li>
+                        <li>After each round, both players recover 1 energy.</li>
+                        <li>In each round, one of the players is randomly awarded a point.</li>
+                        <li>The first player to reach 3 points wins the set.</li>
+                        <li>You play against a dummy opponent.</li>
+                        <li>The dummy always uses 1 energy per round.</li>
+                        <li>You can play endlessly as we are looking for </li>
                     </ul>
+
+                    <p>How the winner of a point is determined:</p>
+
+                    <ul>
+                        <li>Let <b>E</b> = energy used by the player.</li>
+                        <li>The dummy always uses 1 energy.</li>
+                        <li>A random number <b>R</b> is chosen between 0 and (E + 1).</li>
+                        <li>If <b>R</b> &lt; <b>E</b>, the player wins the point.</li>
+                        <li>Otherwise, the dummy wins the point.</li>
+                    </ul>
+
+                    <p>This means the probability that the player wins the point is <b>E / (E + 1)</b>.</p>
                     <p>
-                        This means the probability that the player wins is <b>E / (E + 1)</b>.
+                        Note: This game doesn't have a real "end" — it's just a test environment for trying out different strategies.
+                        You can play as many rounds or sets as you want to explore how energy usage affects your chances of winning.
                     </p>
                 </div>
-                <div style="">
-                    <h2>Try it !</h2>
+                <div style="flex: 1">
+                    <h2>Try it!</h2>
                     <button id="simStepBtn">Play a round</button>
                     <button id="simResetBtn">Reset</button>
-                    <br><br>  
+                    <br><br>
                     <div id="interactiveSimArea" style="min-height:220px;"></div>
-
                 </div>
             </div>
             <div id="panel2" class="panel">
                 <div style="display: flex; flex-flow: column;">
                     <h2>Let a bot do the work</h2>
-                    <label for="strategyBox">function botStrategy(energy, botPoint, botSet, dummyPoint, dummyPoint)</label>
+                    <label for="strategyBox">function botStrategy(botID, energy, botPoint, dummyPoint)</label>
                     <textarea id="strategyBox" rows="6" cols="40">
-//example strategy for the bot, you can do better !
+//example strategy for the bot, you can do better!
 function strategy(botID, energy, botPoint, dummyPoint) {
     return (botPoint > dummyPoint) ? 1+energy/100 : 0.99
 }</textarea>
@@ -130,20 +155,19 @@ function strategy(botID, energy, botPoint, dummyPoint) {
                     <button id="pauseBtn">Pause</button>
                 </div>
                 <div style="">
-                    <h2>Can you consistently beat the dummy ?</h2>
+                    <h2>Can you consistently beat the dummy?</h2>
                     <div id="autoSimArea" style="min-height:220px;"></div>
                 </div>
             </div>
             <div id="panel3" class="panel">
                 <div style="display: flex; flex-flow: column; width: 300px">
-                    <h2>Let's tinker !</h2>
-                    <p>Use the botID to simultaneously evaluate a lot of diffent strategy at once</p>
+                    <h2>Let's tinker!</h2>
+                    <p>Use the botID to simultaneously evaluate a lot of different strategies at once.</p>
                     <p>Get a feel for what could be the best strategy.</p>
                 </div>
                 <div style="display: flex; flex-flow: column;">
-                    <label for="strategyFunc">function botStrategy(botID, energy, botPoint, dummyPoint, m)</label>
                     <textarea id="strategyFunc" rows="12" cols="40">
-//example strategy for the bots, you can do better !
+//example strategy for the bots, you can do better!
 let m = Array(100);
 for (let i = 0; i < 100; i++) {
     const e = i*0.1;
@@ -159,49 +183,51 @@ function strategy(botID, energy, botPoint, dummyPoint) {
                     <button id="chartApply">Apply</button>
                     <button id="chartPause">Pause</button>
                 </div>
-                <div id="chartPanel" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
+                <div id="chartPanel" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px; max-height: 500px">
                     <div id="bestSetWinRatio" style="font-size:1.5em; font-weight:bold; color:#1a73e8; margin-bottom:16px;">
                         Best Set Win Ratio: 0%
                     </div>
                     <div id="ticksPerSecond" style="padding:8px 16px;font-size:1em;color:#666;z-index:3000;">
                         fps: 0
                     </div>
-                    <canvas id="ratioChart" width="700" height="400"></canvas>
+                    <canvas id="ratioChart" width="800" height="200"></canvas>
                 </div>
             </div>
             <div id="panel4" class="panel">
                 <div style="display: flex; flex-flow: column; width: 300px">
-                    <h2>Fuck the tickering</h2>
-                    <p>What are we ? Macro Data Refinners ? let's automate the tinkering</p>
+                    <h2>Forget the tinkering</h2>
+                    <p>What are we? Macro Data Refiners? Let's automate the tinkering.</p>
+                    <p>At this point, it's not much of a game, so here is a solution. Feel free to discard it and find your own.</p>
+                    <p>Or even better, maybe you can find a better one?</p>
                 </div>
                 <div style="display: flex; flex-flow: column;">
                     <label for="optimObjective">Given a 3x3 matrix compute the objective that the optimizer should optimize for</label>
                     <textarea id="optimObjective" rows="12" cols="40">
-let v = strategyMatrix;
-let matrixWin = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(1));
-matrixWin[setSize] = Array(setSize + 1).fill(0);
-let matrixEnergy = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(0));
+function objective(v) {
+    let matrixWin = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(1));
+    matrixWin[setSize] = Array(setSize + 1).fill(0);
+    let matrixEnergy = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(0));
 
-for (let s = setSize - 1; s >= 0; s--) {
-    for (let k = setSize - 1; k >= 0; k--) {
-        e0 = v[s * setSize + k];
-        p0 = e0 / (e0 + 1)
+    for (let s = setSize - 1; s >= 0; s--) {
+        for (let k = setSize - 1; k >= 0; k--) {
+            e0 = v[s * setSize + k];
+            p0 = e0 / (e0 + 1)
 
-        vx = matrixWin[s][k + 1] * p0
-        vy = matrixWin[s + 1][k] * (1 - p0)
-        matrixWin[s][k] = vx + vy;
+            vx = matrixWin[s][k + 1] * p0
+            vy = matrixWin[s + 1][k] * (1 - p0)
+            matrixWin[s][k] = vx + vy;
 
-        ex = matrixEnergy[s][k + 1] * p0
-        ey = matrixEnergy[s + 1][k] * (1 - p0)
-        matrixEnergy[s][k] = e0 - 1 + ex + ey;
+            ex = matrixEnergy[s][k + 1] * p0
+            ey = matrixEnergy[s + 1][k] * (1 - p0)
+            matrixEnergy[s][k] = e0 - 1 + ex + ey;
+        }
     }
+    return 1000 * matrixEnergy[0][0] * matrixEnergy[0][0] - matrixWin[0][0]
 }
-return 1000 * matrixEnergy[0][0] * matrixEnergy[0][0] - matrixWin[0][0]
 </textarea>
                     <button id="optimApply">Apply</button>
                     <button id="optimPause">Pause</button>
                 </div>
-
                 <div style="display: flex; flex-direction: row; gap: 24px; align-items: flex-start;">
                     <pre id="optimizerSolution" style="background:#f8f8f8; border-radius:6px;">
 [
@@ -222,28 +248,33 @@ return 1000 * matrixEnergy[0][0] * matrixEnergy[0][0] - matrixWin[0][0]
  ]
 ]
 </pre>
-
                 </div>
                 <div id="optimizerChartDiv" style="flex: 0 1 auto; width:90%; margin:0 auto; background:#fff; border-radius:8px; padding:24px;">
                     <canvas id="optimizerCanvas" width="650" height="200"></canvas>
                 </div>
             </div>
+
         </div>
     </div>
     <script>
+
+
         const buttons = [
+            document.getElementById('btn0'),
             document.getElementById('btn1'),
             document.getElementById('btn2'),
             document.getElementById('btn3'),
             document.getElementById('btn4')
         ];
         const panels = [
+            document.getElementById('panel0'),
             document.getElementById('panel1'),
             document.getElementById('panel2'),
             document.getElementById('panel3'),
             document.getElementById('panel4')
         ];
         const render = [
+            null,
             manualRender,
             automationRender,
             chartRender,

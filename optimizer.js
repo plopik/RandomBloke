@@ -6,13 +6,24 @@ let optimChart = null;
 let optimInterval = null;
 let optimPaused = false;
 let optimizerStart = null;
+let optimObjective = null;
 
 function optimizerRender() {
-    const applyStrategyBtn = document.getElementById('optimApply');
-    const pauseBtn = document.getElementById('optimPause');
-    applyStrategyBtn.onclick = optimReset;
-    pauseBtn.onclick = optimPause;
     if (!optimizerOut) {
+        const applyStrategyBtn = document.getElementById('optimApply');
+        const pauseBtn = document.getElementById('optimPause');
+        applyStrategyBtn.onclick = optimReset;
+        pauseBtn.onclick = optimPause;
+        window.optimBoxEditor = CodeMirror.fromTextArea(
+            document.getElementById('optimObjective'),
+            {
+                mode: "javascript",
+                theme: "default",
+                indentUnit: 4,
+                tabSize: 4,
+                lineWrapping: true
+            }
+        );
         optimReset();
     }
 }
@@ -33,8 +44,9 @@ function optimReset() {
 
     optimSetupChart();
 
-    const code = document.getElementById('optimObjective').value;
-    optimObjective = eval('(function f(strategyMatrix){' + code + '})');
+    eval(window.optimBoxEditor.getValue());
+    optimObjective = objective;
+
     if (optimInterval) clearInterval(optimInterval);
     optimInterval = setInterval(() => {
         try {
@@ -77,29 +89,6 @@ function optimSetupChart() {
     optimChart.update();
 }
 
-objective = function (strategyMatrix) {
-    let v = strategyMatrix;
-    let matrixWin = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(1));
-    matrixWin[setSize] = Array(setSize + 1).fill(0);
-    let matrixEnergy = Array.from({ length: setSize + 1 }, () => Array(setSize + 1).fill(0));
-
-    for (let s = setSize - 1; s >= 0; s--) {
-        for (let k = setSize - 1; k >= 0; k--) {
-            e0 = v[s * setSize + k];
-            p0 = e0 / (e0 + 1)
-
-            vx = matrixWin[s][k + 1] * p0
-            vy = matrixWin[s + 1][k] * (1 - p0)
-            matrixWin[s][k] = vx + vy;
-
-            ex = matrixEnergy[s][k + 1] * p0
-            ey = matrixEnergy[s + 1][k] * (1 - p0)
-            matrixEnergy[s][k] = e0 - 1 + ex + ey;
-        }
-    }
-    return 1000 * matrixEnergy[0][0] * matrixEnergy[0][0] - matrixWin[0][0]
-}
-
 function optimizeBotStrategy() {
     console.log("Optimizing bot strategy...");
     // objective that needs to be minimized
@@ -120,7 +109,7 @@ function optimizeBotStrategy() {
 
 
     var optimizer = optimjs.OMGOptimizer(xdim, n_random_starts = 0);
-    optimizer.tell([x0], [objective(x0)]);
+    optimizer.tell([x0], [optimObjective(x0)]);
 
     // optimization loop specified manually. The optimization runs for 256 iterations.
     for (var iter = 0; iter < 1000; iter++) {

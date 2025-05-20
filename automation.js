@@ -4,11 +4,23 @@ let autoInterval = null;
 let stepPerTick = 1000;
 
 function automationRender() {
-    const applyStrategyBtn = document.getElementById('applyStrategy');
-    const pauseBtn = document.getElementById('pauseBtn');
-    applyStrategyBtn.onclick = automationReset;
-    pauseBtn.onclick = automationPause;
+
     if (!autoState) {
+        const applyStrategyBtn = document.getElementById('applyStrategy');
+        const pauseBtn = document.getElementById('pauseBtn');
+        applyStrategyBtn.onclick = automationReset;
+        pauseBtn.onclick = automationPause;
+        
+        window.strategyBoxEditor = CodeMirror.fromTextArea(
+            document.getElementById('strategyBox'),
+            {
+                mode: "javascript",
+                theme: "default",
+                indentUnit: 4,
+                tabSize: 4,
+                lineWrapping: true
+            }
+        );
         automationReset();
     }
 }
@@ -34,7 +46,7 @@ function automationReset() {
         lastRand: null,
     };
 
-    eval(document.getElementById('strategyBox').value);
+    eval(window.strategyBoxEditor.getValue());
     autoStrategy = strategy
 
     clearInterval(autoInterval);

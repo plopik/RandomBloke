@@ -8,11 +8,22 @@ let chartPaused = false;
 let simInterval;
 
 function chartRender() {
-    const applyStrategyBtn = document.getElementById('chartApply');
-    const pauseBtn = document.getElementById('chartPause');
-    applyStrategyBtn.onclick = chartReset;
-    pauseBtn.onclick = chartPause;
+
     if (!score) {
+        const applyStrategyBtn = document.getElementById('chartApply');
+        const pauseBtn = document.getElementById('chartPause');
+        applyStrategyBtn.onclick = chartReset;
+        pauseBtn.onclick = chartPause;
+        window.chartStrategyBox = CodeMirror.fromTextArea(
+            document.getElementById('strategyFunc'),
+            {
+                mode: "javascript",
+                theme: "default",
+                indentUnit: 4,
+                tabSize: 4,
+                lineWrapping: true
+            }
+        );
         chartReset();
     }
 }
@@ -40,7 +51,7 @@ function chartReset() {
     };
     setupChart();
 
-    eval(document.getElementById('strategyFunc').value);
+    eval(window.chartStrategyBox.getValue());
     chartBotStrategyAux = strategy;
 
     tickCount = 0;
