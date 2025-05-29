@@ -9,11 +9,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="file2.js"></script>
     <script src="simulation.js"></script>
     <script src="manual.js"></script>
     <script src="automation.js"></script>
     <script src="optimizer.js"></script>
     <script src="longerset.js"></script>
+    <script src="fullrules.js"></script>
 
     <style>
         body {
@@ -86,6 +88,7 @@
             <button id="btn3">Charting</button>
             <button id="btn4">Optimizing</button>
             <button id="btn5">What if</button>
+            <button id="btn6">Full rules</button>
         </div>
         <div class="main">
             <div id="panel0" class="panel active">
@@ -135,7 +138,7 @@
                         <li>The game doesn't "end" — it's just a toy game for trying out different strategies </li>
                     </ul>
                     <p>
-                        Feel free to keep playing — but fair warning: even with optimal strategy, your edge over the dummy is so small that playing manually feels more like a test of patience than skill.
+                        Feel free to keep playing but be warned: even with the optimal strategy, your edge over the dummy is so small that playing manually could take hundreds of round before gaining a meaningfull lead.
                         You might want to head over to the next tab sonner rather than later.
                     </p>
 
@@ -233,7 +236,6 @@ function objective(v) {
                     <button id="optimPause">Pause</button>
                 </div>
                 <div style="flex: 0 0 200px; padding: 20px">
-                    <label for="optimizerSolution">Optimizer output :</label>
                     <pre id="optimizerSolution" style="background:#f8f8f8; border-radius:6px;">
 [
  [
@@ -262,29 +264,48 @@ function objective(v) {
                 <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
                     <h2>What if there are more points in a set ?</h2>
                     <label for="optim2SetSize">Number of Point to win a Set :</label>
-                    <input type="text" id="optim2SetSize" value="10" style="width: 20px;">
+                    <input type="text" id="optim2SetSize" style="width: 30px;">
+                    <button id="optim2Times2">x2</button>
+                    energy:<input type="text" id="optim2Temp" style="width: 40px;">
+                    winrate:<input type="text" id="optim2Pressure" style="width: 40px;">
                     <p>We may need a better way to find the best strategy when N gets bigger...</p>
-                </div>
-                <div style="flex: 1 0 600px; display: flex; flex-flow: column;">
-                    <label for="optim2Objective"></label>
-                    <textarea id="optim2Objective" rows="12" cols="40"></textarea>
                     <button id="optim2Apply">Apply</button>
                     <button id="optim2Pause">Pause</button>
-                </div>                
-                <div style="flex: 0 0 300px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
-                    <canvas id="optim2Heatmap" width="400" height="400"></canvas>
                 </div>
+                <div style="flex: 1 0 600px; display: none; flex-flow: column;">
+                    <label for="optim2Objective"></label>
+                    <textarea id="optim2Objective" rows="12" cols="40" style="display: none"></textarea>
+                </div>
+
                 <div id="optim2ChartDiv" style="flex: 1 0 800px; background:#fff; max-height:400px">
                     <canvas id="optim2Canvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
                 </div>
-
+                <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="optim2Heatmap" width="400" height="400"></canvas>
+                </div>                
+                <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="optim2Passingmap" width="400" height="400"></canvas>
+                </div>
             </div>
-
+            <div id="panel6" class="panel">
+                <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
+                    <h2>Let's use a rule set closer to actual Tennis'</h2>
+                    <label for="frBotNumber">Number of bot :</label>
+                    <input type="text" id="frBotNumber" value="30" style="width: 20px;">
+                </div>
+                <div style="flex: 1 0 600px; display: flex; flex-flow: column;">
+                    <textarea id="frStrategy" rows="12" cols="40"></textarea>
+                    <button id="frApply">Apply</button>
+                    <button id="frPause">Pause</button>
+                </div>
+                <div id="frChartDiv" style="flex: 1 0 800px; background:#fff; max-height:400px">
+                    <canvas id="frCanvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
+                </div>
+            </div>
         </div>
     </div>
     <script>
-
-        const panelNumber = 6;
+        const panelNumber = 7;
         const buttons = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`btn${i}`));
         const panels = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`panel${i}`));
 
@@ -295,9 +316,19 @@ function objective(v) {
             document.getElementById('optim2Canvas'),
             document.getElementById('optim2Heatmap'),
             document.getElementById('optim2SetSize'),
+            document.getElementById('optim2Temp'),
+            document.getElementById('optim2Pressure'),
+            document.getElementById('optim2Times2'),
+            document.getElementById('optim2Passingmap'),
         );
-        //console.log(optim2);
-        //optim2.render();
+
+        const fr = new fullrules(
+            document.getElementById('frPause'),
+            document.getElementById('frApply'),
+            document.getElementById('frStrategy'),
+            document.getElementById('frCanvas'),
+            document.getElementById('frBotNumber'),
+        );
 
         const render = [
             null,
@@ -305,7 +336,8 @@ function objective(v) {
             automationRender,
             chartRender,
             optimizerRender,
-            optim2.render.bind(optim2)
+            optim2.render.bind(optim2),
+            fr.render.bind(fr)
         ];
         const hide = [
             null,
@@ -313,7 +345,8 @@ function objective(v) {
             autoHide,
             chartHide,
             optimHide,
-            optim2.hide.bind(optim2)
+            optim2.hide.bind(optim2),
+            fr.hide.bind(fr)
         ];
         buttons.forEach((btn, idx) => {
             btn.onclick = function () {
@@ -327,6 +360,7 @@ function objective(v) {
                 }
             };
         });
+        buttons[5].onclick()
     </script>
 </body>
 </html>
