@@ -16,6 +16,7 @@
     <script src="optimizer.js"></script>
     <script src="longerset.js"></script>
     <script src="fullrules.js"></script>
+    <script src="mirror.js"></script>
 
     <style>
         body {
@@ -87,8 +88,9 @@
             <button id="btn2">Automating</button>
             <button id="btn3">Charting</button>
             <button id="btn4">Optimizing</button>
-            <button id="btn5">What if</button>
-            <button id="btn6">Full rules</button>
+            <button id="btn5">Bigger sets</button>
+            <button id="btn6">Mirror</button>
+            <button id="btn7">Full rules</button>
         </div>
         <div class="main">
             <div id="panel0" class="panel active">
@@ -282,12 +284,28 @@ function objective(v) {
                 </div>
                 <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
                     <canvas id="optim2Heatmap" width="400" height="400"></canvas>
-                </div>                
+                </div>
                 <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
                     <canvas id="optim2Passingmap" width="400" height="400"></canvas>
                 </div>
             </div>
             <div id="panel6" class="panel">
+                <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
+                    <h2>What if there are more points in a set ?</h2>
+                    <p>We may need a better way to find the best strategy when N gets bigger...</p>
+                    <button id="mirrorPause">Pause</button>
+                </div>
+                <div id="mirroChartDiv" style="flex: 1 0 800px; background:#fff; max-height:400px">
+                    <canvas id="mirrorCanvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
+                </div>
+                <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="mirrorHeatmap" width="400" height="400"></canvas>
+                </div>
+                <div style="flex: 0 0 1000px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="mirrorPassingmap" width="400" height="400"></canvas>
+                </div>
+            </div>
+            <div id="panel7" class="panel">
                 <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
                     <h2>Let's use a rule set closer to actual Tennis'</h2>
                     <label for="frBotNumber">Number of bot :</label>
@@ -330,6 +348,13 @@ function objective(v) {
             document.getElementById('frBotNumber'),
         );
 
+        const mr = new mirror(
+            document.getElementById('mirrorPause'),
+            document.getElementById('mirrorCanvas'),
+            document.getElementById('mirrorHeatmap'),
+            document.getElementById('mirrorPassingmap'),
+        );
+
         const render = [
             null,
             manualRender,
@@ -337,6 +362,7 @@ function objective(v) {
             chartRender,
             optimizerRender,
             optim2.render.bind(optim2),
+            mr.render.bind(mr),
             fr.render.bind(fr)
         ];
         const hide = [
@@ -346,6 +372,7 @@ function objective(v) {
             chartHide,
             optimHide,
             optim2.hide.bind(optim2),
+            mr.hide.bind(mr),
             fr.hide.bind(fr)
         ];
         buttons.forEach((btn, idx) => {
@@ -360,7 +387,7 @@ function objective(v) {
                 }
             };
         });
-        buttons[5].onclick()
+        //buttons[6].onclick()
     </script>
 </body>
 </html>
