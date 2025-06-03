@@ -1,0 +1,46 @@
+happiness 
+
+You are a random bloke, driven like other blokes by something, let's call that something happiness
+
+You set goals for yourself, some a acheivable, some are not
+
+- Material confort, you are content when you have at least as much as you perceive others have, the closer the other the more it squew your perception
+- Social activities How others look at you matters a great deal, maintaining dignity is often quite doable, acheiving others admiration can be hard but rewarding
+- Freedom, feeling like you have the means to choose for yourself, it's hard to pin point what determine that feeling, if one choice is clearly better than the other do you feel like you are free ? If the only way to feed yourself is by finding a job and getting a salary do you feel free ? guess it depends
+- Passion and hobbies, some have specific things that bring joy, being able to fullfill those thing can be powerfull drive
+- Children, romance and family
+- Security, some things can go wrong, being able to handle them is crucial
+
+Any acheived goal will bring happiness but you need to maintain it even if the happiness will fade over time and other goal will have to be acheived in order to keep feeling happy.
+Constant happiness seems unrealistic, some of it are out of your hands, that doesn't means that you are no control what so ever.
+
+Keep in mind, this is a game, not a scientific study nor a philosophical essay. I always wonder facing any choice why should I choose one of the other, most of the time it doesn't actualy matter, or the choice is actualy obvious, still I'd like to know how much it actualy matter, or how worse would the other choice be.
+there will be a lot of assumption, hopefully they will make sense to you will be able to get some insight out of it.
+
+Society bring you the goals and the means to acheive them 
+
+loans
+social security
+financial opportunities
+jobs
+bets
+assurance
+capitals gains
+
+start at 18 years old
+randomly die each year = B(10**(age/100 - 10))
+goals with rewards attached :
+  house = { happiness : log(price)*(10 -1 each year) -100 if lost, price : x + x/100 by year}
+  job = { happiness random, salary random }
+  freedom = { happiness : log(liquidity + capital) }
+  financial opportunities = { expected value : E, risk distribution : P, min-max investemenent }
+  assurance = {always available, risk distribution : P, expected cost : E, price of mitigation : M > E }
+  bets = {always available, financial opportunities with negative expected value }
+  loans = {always available gain = x - (x*104/100)/10 for 10 years, not available after 60 }
+  hobby = {randomly available, price from free to very expensive happiness : rand(0,100) + log(price) , price : x by year}
+  romantic partenair = {randomly available happiness : 100 * random(0.8,1) each year, price random, work in mysterious ways}
+  children = {similar, less risky expensive}
+  capital gains = {3% each year}
+  school = {expensive, can't have a job, give access to better jobs}
+  friends = {random at start, activities bring happiness as long as you can afford it, random new friend depending of your job/hobby}
+  social security = { depends on the country, 
