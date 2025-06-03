@@ -1,5 +1,5 @@
 class fullrules {
-    constructor(pauseBtn, applyBtn, boxEditor, chartCanvas) {
+    constructor(pauseBtn, applyBtn, boxEditor, chartCanvas, botNumberEditor) {
         this.chart = null;
         this.interval = null;
         this.paused = false;
@@ -10,7 +10,12 @@ class fullrules {
         this.boxEditor = boxEditor;
         this.boxMirror = null;
         this.chartCanvas = chartCanvas;
-        this.botNumber = 100;
+        this.botNumber = 1;
+        this.botNumberEditor = botNumberEditor;
+        this.botNumberEditor.value = this.botNumber;
+        this.maxEnergy = 100;
+        this.RoundPerTick = 10000;
+        this.dummyPointPerMatch = 223;
     }
 
     render() {
@@ -44,43 +49,64 @@ class fullrules {
     }
 
     reset() {
-        this.energy = Array(this.botNumber).fill(0);
-        this.botPoints = Array(this.botNumber).fill(0);
-        this.dummyPoints = Array(this.botNumber).fill(0);
-        this.botSets = Array(this.botNumber).fill(0);
-        this.dummySets = Array(this.botNumber).fill(0);
-        this.setWinRatios = [];
+        this.botNumber = parseInt(this.botNumberEditor.value);
+        this.matchStates = Array(this.botNumber).fill().map((_) => ({
+            e: this.maxEnergy,
+            point: 0,
+            pointd: 0,
+            game: 0,
+            gamed: 0,
+            set: 0,
+            setd: 0,
+            match: 0,
+            matchd: 0,
+            energyWasted: 0,
+            roundTotal: 0
+        }));
+        console.log(this.matchStates);
         this.totalPointsPlayed = 0;
-        this.bestSetWinRatio = null;
-        //this.botNumber = parseInt(this.setBotNumber.value);
+        this.bestSetWinRatio = 0;
         this.setupChart();
         eval?.(this.boxMirror.getValue());
         this.strategy = strategy;
-        //this.objective = this.objectiveStart;
         if (this.interval) clearInterval(this.interval);
         this.interval = setInterval(() => {
             try {
                 if (this.paused) return;
                 if (!this.active) return;
+                const now = Date.now();
                 this.simulationTick();
-                const labels = this.setWinRatios.map(r => `Bot ${r.bot}`);
-                const ratios = this.setWinRatios.map(r => (r.ratio * 100));
-                const ciLows = this.setWinRatios.map((r, i) => ({ x: i, y: r.ciLow * 100 }));
-                const ciHighs = this.setWinRatios.map((r, i) => ({ x: i, y: r.ciHigh * 100 }));
+
+                let toChart = this.setWinRatios;
+                //toChart = this.wastedEnergy;
+                //let toChart = this.roundPerMatch;
+                const labels = toChart.map(r => `Bot ${r.bot}`);
+                const bars = toChart.map(r => (r.bar));
+                const ciLows = toChart.map((r, i) => ({ x: i, y: r.ciLow}));
+                const ciHighs = toChart.map((r, i) => ({ x: i, y: r.ciHigh}));
 
 
                 this.chart.data.labels = labels;
-                this.chart.data.datasets[0].data = ratios;
+                this.chart.data.datasets[0].data = bars;
                 this.chart.data.datasets[1].data = ciLows;
                 this.chart.data.datasets[2].data = ciHighs;
                 this.chart.options.animation = false;
                 this.chart.update();
+
+                const optimizeDuration = Date.now() - now;
+                if (optimizeDuration > 400) {
+                    this.RoundPerTick = this.RoundPerTick / 1.2;
+                }
+                if (optimizeDuration < 100) {
+                    this.RoundPerTick = this.RoundPerTick * 1.2;
+                }
+                console.log('Optimization duration:', optimizeDuration, 'ms, iter', this.RoundPerTick);
             } catch (e) {
-                clearInterval(this.interval);
+                this.paused = true;
                 alert('error: ' + e.message);
                 throw e;
             }
-        }, 200);
+        }, 1000);
     }
 
     setupChart() {
@@ -132,63 +158,137 @@ class fullrules {
         this.chart.update();
     }
 
-    strategyStart() {
-        return 1;
+    strategyStart(botID, matchState) {
+        let e = matchState.e;
+        let ed = matchState.ed;
+        let point = matchState.point;
+        let pointd = matchState.pointd;
+        let set = matchState.set;
+        let setd = matchState.setd;
+        let match = matchState.match;
+        let matchd = matchState.matchd;
+        return (1.3 + 0.02 * botID);
+    }
+
+    playRound(botID, matchState) {
+        let e = matchState.e;
+        let ed = matchState.ed;
+        let point = matchState.point;
+        let pointd = matchState.pointd;
+        let game = matchState.game;
+        let gamed = matchState.gamed;
+        let set = matchState.set;
+        let setd = matchState.setd;
+        let match = matchState.match;
+        let matchd = matchState.matchd;
+
+        let ePlayed = Math.min(this.strategy(botID, matchState), e);
+        let ePlayedd = Math.min(1 + this.maxEnergy / this.dummyPointPerMatch, ed);
+        let totalPlayed = ePlayed + ePlayedd;
+        if (totalPlayed == 0) {
+            totalPlayed = 2;
+            ePlayed = 1;
+        }
+
+        e = Math.min(e - ePlayed +1, this.maxEnergy);
+        ed = Math.min(ed - ePlayedd +1, this.maxEnergy);
+        const rand = Math.random() * totalPlayed;
+        if (rand < ePlayed) {
+            point++;
+        } else {
+            pointd++;
+        }
+        if (point >= 4) {
+            game++;
+            point = 0;
+            pointd = 0;
+        }
+        if (pointd >= 4) {
+            gamed++;
+            point = 0;
+            pointd = 0;
+        }
+        if (game >= 6) {
+            set++;
+            game = 0;
+            gamed = 0;
+        }
+        if (gamed >= 6) {
+            setd++;
+            game = 0;
+            gamed = 0;
+        }
+        matchState.set = set;
+        matchState.setd = setd;
+        matchState.e = e;
+        matchState.ed = ed;
+        matchState.point = point;
+        matchState.pointd = pointd;
+        matchState.game = game;
+        matchState.gamed = gamed;
+        if (set >= 3) {
+            match++;
+            this.MatchEnd(matchState);
+        }
+        if (setd >= 3) {
+            matchd++;
+            this.MatchEnd(matchState);
+        }
+
+        matchState.match = match;
+        matchState.matchd = matchd;
+        matchState.roundTotal += 1;
+    }
+
+    MatchEnd(matchState) {
+        matchState.energyWasted += matchState.e - 1
+        matchState.e = this.maxEnergy;
+        matchState.ed = this.maxEnergy;
+        matchState.set = 0;
+        matchState.setd = 0;
     }
 
     simulationTick() {
-        for (let step = 0; step < 100; step++) {
-            for (let i = 0; i < this.botNumber; i++) {
-                this.energy[i] = Math.min(this.energy[i] + 1, 10000);
-                const usedBot = Math.min(this.energy[i], this.strategy(i, this.energy[i], this.botPoints[i], this.dummyPoints[i]));
-                const used0 = 1;
-
-                this.energy[i] -= usedBot;
-
-                const total = usedBot + used0;
-                if (total > 0) {
-                    const rand = Math.random() * total;
-                    if (rand < usedBot) {
-                        this.botPoints[i]++;
-                    } else {
-                        this.dummyPoints[i]++;
-                    }
-                    this.totalPointsPlayed++;
-                }
-
-                const bBot = this.botPoints[i];
-                const b0 = this.dummyPoints[i];
-                if (bBot >= 3 || b0 >= 3) {
-                    if (bBot > b0) {
-                        this.botSets[i]++;
-                    } else {
-                        this.dummySets[i]++;
-                    }
-                    this.botPoints[i] = 0;
-                    this.dummyPoints[i] = 0;
-                }
-            }
-        }
+        //this.pause()
         this.setWinRatios = [];
-        for (let i = 0; i < N; i++) {
-            const bset = this.botSets[i];
-            const dset = this.dummySets[i];
-            const n = bset + dset;
-            let ratio = 0, ciLow = 0, ciHigh = 0;
-            if (n > 0) {
-                ratio = bset / n;
-                const z = 1.645;
-                const se = Math.sqrt(ratio * (1 - ratio) / n);
-                const ciLow = Math.max(0, ratio - z * se);
-                const ciHigh = Math.min(1, ratio + z * se);
-            
-                this.setWinRatios.push({
-                    bot: i,
-                    ratio,
-                    ciLow,
-                    ciHigh
-                });
+        this.wastedEnergy = [];
+        this.roundPerMatch = [];
+        for (let i = 0; i < this.botNumber; i++) {
+            let matchState = this.matchStates[i];
+            for (let step = 0; step < this.RoundPerTick; step++) {
+                this.playRound(i, matchState);
+                //if (i == 1) {
+                //    console.log(matchState.e, matchState.point);
+                //}
             }
+            let match = matchState.match;
+            let matchd = matchState.matchd;
+
+            const n = Math.max(match + matchd,1);
+            const ratio = match / n;
+            const z = 1.645;
+            const se = Math.sqrt(ratio * (1 - ratio) / n);
+            const ciLow = Math.max(0, ratio - z * se);
+            const ciHigh = Math.min(1, ratio + z * se);
+            
+            this.setWinRatios.push({
+                bot: i,
+                bar : ratio *100,
+                ciLow: ciLow *100,
+                ciHigh: ciHigh * 100
+            });
+
+            const energyWasted = matchState.energyWasted / n
+            this.wastedEnergy.push({
+                bot: i,
+                bar : energyWasted
+            });
+            const roundPerMatch = matchState.roundTotal / n
+            this.roundPerMatch.push({
+                bot: i,
+                bar: roundPerMatch
+            });
+            console.log(matchState.roundTotal/n);
         }
     }
 }

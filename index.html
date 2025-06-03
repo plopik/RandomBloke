@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
-    <script src="file2.js"></script>
+    <script src="statistics.min.js" type="text/javascript"></script>
+    <script src="matrix128.js"></script>
     <script src="simulation.js"></script>
     <script src="manual.js"></script>
     <script src="automation.js"></script>
@@ -17,6 +18,7 @@
     <script src="longerset.js"></script>
     <script src="fullrules.js"></script>
     <script src="mirror.js"></script>
+    <script src="energyPool.js"></script>
 
     <style>
         body {
@@ -30,7 +32,7 @@
         }
 
         .sidebar {
-            flex: 0 0 200px;
+            flex: 0 0 8%;
             background: #f4f4f4;
             border-right: 1px solid #ddd;
             display: flex;
@@ -90,7 +92,8 @@
             <button id="btn4">Optimizing</button>
             <button id="btn5">Bigger sets</button>
             <button id="btn6">Mirror</button>
-            <button id="btn7">Full rules</button>
+            <button id="btn8">Energy pool</button>
+            <button id="btn7" style="display: none">Full rules</button>
         </div>
         <div class="main">
             <div id="panel0" class="panel active">
@@ -291,8 +294,9 @@ function objective(v) {
             </div>
             <div id="panel6" class="panel">
                 <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
-                    <h2>What if there are more points in a set ?</h2>
-                    <p>We may need a better way to find the best strategy when N gets bigger...</p>
+                    <h2>What if the dummy use our strategy ? </h2>
+                    <p>what is the best strategy now ?</p>
+                    <p>It's hard to force the energy used to stay around 0 so instead we only have to use as much energy as the dummy</p>
                     <button id="mirrorPause">Pause</button>
                 </div>
                 <div id="mirroChartDiv" style="flex: 1 0 800px; background:#fff; max-height:400px">
@@ -307,9 +311,13 @@ function objective(v) {
             </div>
             <div id="panel7" class="panel">
                 <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
-                    <h2>Let's use a rule set closer to actual Tennis'</h2>
-                    <label for="frBotNumber">Number of bot :</label>
-                    <input type="text" id="frBotNumber" value="30" style="width: 20px;">
+                    <h2>Let's use a rule set closer to actual Tennis</h2>
+                    <p>4 point to win a game with at least 2 point difference<br>
+                    6 game to win a set<br>
+                    3 set to win the match</p>
+                    <p>start with 100 energy recover 1 each point</p>
+                    <p>can't have more than 100 energy</p>
+                    <p><label for="frBotNumber">Number of bot :</label><input type="text" id="frBotNumber" style="width: 20px;"></p>
                 </div>
                 <div style="flex: 1 0 600px; display: flex; flex-flow: column;">
                     <textarea id="frStrategy" rows="12" cols="40"></textarea>
@@ -320,10 +328,33 @@ function objective(v) {
                     <canvas id="frCanvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
                 </div>
             </div>
+            <div id="panel8" class="panel">
+                <div style="flex: 0 0 600px; background:#f8f8f8; border-radius:6px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="epTestCanvas" width="400" height="400"></canvas>
+                </div>
+                <div style="flex: 0 0 400px; display: flex; flex-flow: column; width: 300px">
+                    <h2>Let's say we have an energy pool</h2>
+                    <p>
+                        4 points to win a set<br>
+                        4 sets to win the match<br>
+                        start with 38 energy<br>
+                    </p>
+                    <p>can you find a strategy that consistently win against the dummy ?</p>
+                    <p><label for="epBotNumber">Number of bot :</label><input type="text" id="epBotNumber" style="width: 20px;"></p>
+                </div>
+                <div style="flex: 1 0 600px; display: flex; flex-flow: column;">
+                    <textarea id="epStrategy" rows="12" cols="40"></textarea>
+                    <button id="epApply">Apply</button>
+                    <button id="epPause">Pause</button>
+                </div>
+                <div id="epChartDiv" style="flex: 1 0 800px; background:#fff; max-height:400px">
+                    <canvas id="epCanvas" width="100" height="100" style="width: 100%; height: 100%"></canvas>
+                </div>
+            </div>
         </div>
     </div>
     <script>
-        const panelNumber = 7;
+        const panelNumber = 9;
         const buttons = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`btn${i}`));
         const panels = Array.from({ length: panelNumber }, (_, i) => document.getElementById(`panel${i}`));
 
@@ -340,6 +371,13 @@ function objective(v) {
             document.getElementById('optim2Passingmap'),
         );
 
+        const mr = new mirror(
+            document.getElementById('mirrorPause'),
+            document.getElementById('mirrorCanvas'),
+            document.getElementById('mirrorHeatmap'),
+            document.getElementById('mirrorPassingmap'),
+        );
+
         const fr = new fullrules(
             document.getElementById('frPause'),
             document.getElementById('frApply'),
@@ -348,11 +386,13 @@ function objective(v) {
             document.getElementById('frBotNumber'),
         );
 
-        const mr = new mirror(
-            document.getElementById('mirrorPause'),
-            document.getElementById('mirrorCanvas'),
-            document.getElementById('mirrorHeatmap'),
-            document.getElementById('mirrorPassingmap'),
+        const ep = new energyPool(
+            document.getElementById('epPause'),
+            document.getElementById('epApply'),
+            document.getElementById('epStrategy'),
+            document.getElementById('epCanvas'),
+            document.getElementById('epBotNumber'),
+            document.getElementById('epTestCanvas'),
         );
 
         const render = [
@@ -363,7 +403,8 @@ function objective(v) {
             optimizerRender,
             optim2.render.bind(optim2),
             mr.render.bind(mr),
-            fr.render.bind(fr)
+            fr.render.bind(fr),
+            ep.render.bind(ep),
         ];
         const hide = [
             null,
@@ -373,7 +414,8 @@ function objective(v) {
             optimHide,
             optim2.hide.bind(optim2),
             mr.hide.bind(mr),
-            fr.hide.bind(fr)
+            fr.hide.bind(fr),
+            ep.hide.bind(ep),
         ];
         buttons.forEach((btn, idx) => {
             btn.onclick = function () {
@@ -387,7 +429,7 @@ function objective(v) {
                 }
             };
         });
-        //buttons[6].onclick()
+        //buttons[8].onclick()
     </script>
 </body>
 </html>
